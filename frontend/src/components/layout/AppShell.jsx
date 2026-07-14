@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import Navbar from './Navbar'
 import Sidebar from './Sidebar'
+import MobileMenu from './MobileMenu'
 
 export default function AppShell() {
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
@@ -12,8 +13,13 @@ export default function AppShell() {
       <Navbar />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Left sidebar */}
-        <Sidebar />
+        {/* Desktop sidebar — hidden on mobile */}
+        <div className="hidden md:block">
+          <Sidebar />
+        </div>
+
+        {/* Mobile slide-over sidebar */}
+        <MobileMenu />
 
         {/* Main scrollable content area */}
         <main
@@ -28,3 +34,4 @@ export default function AppShell() {
     </div>
   )
 }
+

@@ -8,29 +8,83 @@ import {uploadOnCloudinary} from "../utils/cloudinary.js"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
-    const { page = 1, limit = 10, query, sortBy, sortType, userId } = req.query
-    //TODO: get all videos based on query, sort, pagination
-    if(!isValidObjectId(userId)){
-        throw new Error(400,"user id is not correct");
+    const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc", userId } = req.query
+
+    const pipeline = [];
+
+    // 1. Match published videos
+    const matchConditions = { isPublished: true };
+
+    // 2. Search by query if provided
+    if (query) {
+        matchConditions.$or = [
+            { title: { $regex: query, $options: "i" } },
+            { description: { $regex: query, $options: "i" } }
+        ];
     }
-    const videos=await Video.aggregatePaginate(
-    {
-        query
-    },{
-        page: parseInt(page),
-        limit: parseInt(limit),
-        sort: { [sortBy]: sortType }, 
-        userId: isValidObjectId(userId) ? userId : null,
+
+    // 3. Filter by userId if provided
+    if (userId) {
+        if (!isValidObjectId(userId)) {
+            throw new ApiError(400, "Invalid userId");
+        }
+        matchConditions.owner = new mongoose.Types.ObjectId(userId);
+    }
+
+    pipeline.push({ $match: matchConditions });
+
+    // 4. Join owner details
+    pipeline.push({
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "ownerDetails",
+            pipeline: [
+                {
+                    $project: {
+                        fullName: 1,
+                        username: 1,
+                        avatar: 1
+                    }
+                }
+            ]
+        }
+    });
+
+    pipeline.push({
+        $addFields: {
+            owner: { $first: "$ownerDetails" }
+        }
+    });
+
+    pipeline.push({
+        $project: {
+            ownerDetails: 0
+        }
+    });
+
+    // 5. Sort
+    const sortDirection = sortType === "asc" ? 1 : -1;
+    pipeline.push({ $sort: { [sortBy]: sortDirection } });
+
+    // 6. Paginate
+    const aggregate = Video.aggregate(pipeline);
+    
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
         customLabels: {
+            totalDocs: "totalVideos",
             docs: "videos"
         }
-})
-        if(!videos){
-            throw new ApiError(400,"No videos found");
-        }
-        res.status(200).json(
-            new ApiResponse(200,{videos},"All videos are fetched successfully")
-        );
+    };
+
+    const result = await Video.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(
+        new ApiResponse(200, result, "Videos fetched successfully")
+    );
 })
 
 const publishAVideo = asyncHandler(async (req, res) => {

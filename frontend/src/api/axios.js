@@ -10,11 +10,6 @@ const axiosInstance = axios.create({
   },
 })
 
-// ─── Request Interceptor ──────────────────────────────────────────────────────
-// Nothing to add here — cookies are sent automatically via withCredentials.
-// If we ever switch to Bearer tokens in headers, we'd attach them here.
-
-// ─── Response Interceptor ────────────────────────────────────────────────────
 axiosInstance.interceptors.response.use(
   // Success: just pass through
   (response) => response,
@@ -39,7 +34,12 @@ axiosInstance.interceptors.response.use(
       } catch {
         // Refresh failed → user must re-login
         store.dispatch(clearUser())
-        window.location.href = '/login'
+        
+        const currentPath = window.location.pathname
+        if (currentPath !== '/login' && currentPath !== '/register') {
+          window.location.href = '/login'
+        }
+        
         return Promise.reject(error)
       }
     }

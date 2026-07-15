@@ -1,11 +1,10 @@
-import { useRef } from "react";
 import { User } from "../models/user.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { uploadOnCloudinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
-import jwt, { decode } from "jsonwebtoken";
-import { upload } from "../middlewares/multer.middleware.js";
+import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 
 const generateAcessTokenAndRefreshTokens = async (userId) => {
@@ -148,7 +147,7 @@ const logoutUser = asyncHandler(async (req, res) => {
             }
         },
         {
-            new: true
+            returnDocument: "after"
         }
     )
 
@@ -169,7 +168,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
     try {
-        const incomingRefreshToken = req.cookies.refreshToken || req.body.refreshToken;
+        const incomingRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
         if (!incomingRefreshToken) {
             throw new ApiError(401, "unauthorized request")
@@ -190,11 +189,11 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             throw new ApiError(401, "Refresh token is expired or used");
         }
 
-        const { accessToken, newRefreshToken } = await generateRefreshToken(user._id);
+        const { accessToken, refreshToken: newRefreshToken } = await generateAcessTokenAndRefreshTokens(user._id);
 
         const options = {
             httpOnly: true,
-            secure: true
+            secure: false  // set to true in production (HTTPS)
         }
 
         return res.status(200)
@@ -202,7 +201,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
             .cookie("refreshToken", newRefreshToken, options)
             .json(new ApiResponse(
                 200,
-                { accessToken, newRefreshToken },
+                { accessToken, refreshToken: newRefreshToken },
                 "Access token refreshed"
             ))
     } catch (error) {
@@ -255,7 +254,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
             }
         },
         {
-            new: true
+            returnDocument: "after"
             // for returning updated user fields in const user
         }
     ).select("-password")
@@ -284,7 +283,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
             }
         },
         {
-            new: true
+            returnDocument: "after"
         }
     ).select("-password")
 
@@ -316,7 +315,7 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
             }
         },
         {
-            new: true
+            returnDocument: "after"
         }
     ).select("-password");
 

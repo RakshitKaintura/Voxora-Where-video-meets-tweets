@@ -4,6 +4,7 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import { BrowserRouter } from 'react-router-dom'
 import store from '@/store/store'
 import { ToastProvider } from '@/components/shared/Toast'
+import AuthBootstrap from '@/components/auth/AuthBootstrap'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -24,6 +25,7 @@ export default function Providers({ children }) {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <ToastProvider>
+            <AuthBootstrap />
             {children}
           </ToastProvider>
         </BrowserRouter>

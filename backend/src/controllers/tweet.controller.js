@@ -62,7 +62,7 @@ const updateTweet = asyncHandler(async (req, res) => {
                 content:cont
             }
         },{
-            new:true
+            returnDocument: "after"
         }
     )
 

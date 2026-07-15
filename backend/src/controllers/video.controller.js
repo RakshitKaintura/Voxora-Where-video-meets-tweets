@@ -5,7 +5,6 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
-import { UploadStream } from "cloudinary"
 
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -132,7 +131,7 @@ const updateVideo = asyncHandler(async (req, res) => {
             }
         },
         {
-            new:true
+            returnDocument: "after"
         }
     );
 

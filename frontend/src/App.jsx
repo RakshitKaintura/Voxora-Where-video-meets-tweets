@@ -1,27 +1,28 @@
 import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
 // Layout
 import AppShell from '@/components/layout/AppShell'
+import ProtectedRoute from '@/components/auth/ProtectedRoute'
 
-// Eagerly loaded (no lazy — these are tiny and hit on every cold load)
+// Eagerly loaded
 import HomePage from '@/pages/HomePage'
 import LoginPage from '@/pages/LoginPage'
 import RegisterPage from '@/pages/RegisterPage'
 import NotFoundPage from '@/pages/NotFoundPage'
 
-// Lazy-loaded pages (code-split — only downloaded when visited)
-const WatchPage = lazy(() => import('@/pages/WatchPage'))
-const TweetsPage = lazy(() => import('@/pages/TweetsPage'))
-const ChannelPage = lazy(() => import('@/pages/ChannelPage'))
-const PlaylistPage = lazy(() => import('@/pages/PlaylistPage'))
-const LibraryPage = lazy(() => import('@/pages/LibraryPage'))
-const DashboardPage = lazy(() => import('@/pages/DashboardPage'))
+// Lazy-loaded pages
+const WatchPage         = lazy(() => import('@/pages/WatchPage'))
+const TweetsPage        = lazy(() => import('@/pages/TweetsPage'))
+const ChannelPage       = lazy(() => import('@/pages/ChannelPage'))
+const PlaylistPage      = lazy(() => import('@/pages/PlaylistPage'))
+const LibraryPage       = lazy(() => import('@/pages/LibraryPage'))
+const DashboardPage     = lazy(() => import('@/pages/DashboardPage'))
 const SearchResultsPage = lazy(() => import('@/pages/SearchResultsPage'))
-const SettingsPage = lazy(() => import('@/pages/SettingsPage'))
+const SettingsPage      = lazy(() => import('@/pages/SettingsPage'))
 const SubscriptionsPage = lazy(() => import('@/pages/SubscriptionsPage'))
 
-// Simple loading fallback while lazy page chunks load
 function PageLoader() {
   return (
     <div className="flex h-full items-center justify-center min-h-[60vh]">
@@ -29,8 +30,8 @@ function PageLoader() {
         {[0, 1, 2].map((i) => (
           <span
             key={i}
-            className="block w-2 h-2 rounded-full bg-white/30 animate-bounce"
-            style={{ animationDelay: `${i * 0.15}s` }}
+            className="block w-2 h-2 rounded-full animate-bounce"
+            style={{ backgroundColor: 'hsl(var(--red))', animationDelay: `${i * 0.15}s` }}
           />
         ))}
       </div>
@@ -38,101 +39,71 @@ function PageLoader() {
   )
 }
 
+/** Redirects to home if already authenticated (for login/register pages) */
+function GuestRoute({ children }) {
+  const { isAuthenticated, isLoading } = useSelector((s) => s.auth)
+  if (isLoading) return null
+  if (isAuthenticated) return <Navigate to="/" replace />
+  return children
+}
+
+/** Wraps a lazy page with Suspense */
+function Lazy({ component: Component }) {
+  return (
+    <Suspense fallback={<PageLoader />}>
+      <Component />
+    </Suspense>
+  )
+}
+
 export default function App() {
   return (
     <Routes>
-      {/* Auth routes — no shell */}
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      {/* ── Guest-only routes (redirect home if logged in) ── */}
+      <Route
+        path="/login"
+        element={<GuestRoute><LoginPage /></GuestRoute>}
+      />
+      <Route
+        path="/register"
+        element={<GuestRoute><RegisterPage /></GuestRoute>}
+      />
 
-      {/* Main app routes — wrapped in AppShell (Navbar + Sidebar) */}
+      {/* ── Main app shell ── */}
       <Route element={<AppShell />}>
+
+        {/* Public */}
         <Route index element={<HomePage />} />
+        <Route path="search" element={<Lazy component={SearchResultsPage} />} />
+        <Route path="c/:username" element={<Lazy component={ChannelPage} />} />
 
-        <Route
-          path="watch/:videoId"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <WatchPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="tweets"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <TweetsPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="c/:username"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <ChannelPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="playlist/:playlistId"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <PlaylistPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="library"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <LibraryPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="dashboard"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <DashboardPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="search"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SearchResultsPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="settings"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SettingsPage />
-            </Suspense>
-          }
-        />
-
-        <Route
-          path="subscriptions"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SubscriptionsPage />
-            </Suspense>
-          }
-        />
+        {/* Protected */}
+        <Route path="watch/:videoId" element={
+          <ProtectedRoute><Lazy component={WatchPage} /></ProtectedRoute>
+        } />
+        <Route path="tweets" element={
+          <ProtectedRoute><Lazy component={TweetsPage} /></ProtectedRoute>
+        } />
+        <Route path="playlist/:playlistId" element={
+          <ProtectedRoute><Lazy component={PlaylistPage} /></ProtectedRoute>
+        } />
+        <Route path="library" element={
+          <ProtectedRoute><Lazy component={LibraryPage} /></ProtectedRoute>
+        } />
+        <Route path="dashboard" element={
+          <ProtectedRoute><Lazy component={DashboardPage} /></ProtectedRoute>
+        } />
+        <Route path="settings" element={
+          <ProtectedRoute><Lazy component={SettingsPage} /></ProtectedRoute>
+        } />
+        <Route path="subscriptions" element={
+          <ProtectedRoute><Lazy component={SubscriptionsPage} /></ProtectedRoute>
+        } />
       </Route>
 
-      {/* Catch-all */}
+      {/* ── 404 ── */}
       <Route path="*" element={<NotFoundPage />} />
     </Routes>
   )
 }
+

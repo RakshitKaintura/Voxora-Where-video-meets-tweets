@@ -32,17 +32,81 @@ const createTweet = asyncHandler(async (req, res) => {
 
 })
 
+const getTweetPipeline = (req, matchConditions) => [
+    { $match: matchConditions },
+    {
+        $lookup: {
+            from: "users",
+            localField: "owner",
+            foreignField: "_id",
+            as: "owner",
+            pipeline: [
+                { $project: { fullName: 1, username: 1, avatar: 1 } }
+            ]
+        }
+    },
+    {
+        $lookup: {
+            from: "likes",
+            localField: "_id",
+            foreignField: "tweet",
+            as: "likes"
+        }
+    },
+    {
+        $addFields: {
+            owner: { $first: "$owner" },
+            likesCount: { $size: "$likes" },
+            isLiked: {
+                $cond: {
+                    if: { $in: [req.user?._id, "$likes.likedBy"] },
+                    then: true,
+                    else: false
+                }
+            }
+        }
+    },
+    { $project: { likes: 0 } },
+    { $sort: { createdAt: -1 } }
+];
+
+const getAllTweets = asyncHandler(async (req, res) => {
+    const { page = 1, limit = 10 } = req.query;
+
+    const pipeline = getTweetPipeline(req, {});
+    const aggregate = Tweet.aggregate(pipeline);
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        customLabels: { docs: "tweets", totalDocs: "totalTweets" }
+    };
+
+    const tweets = await Tweet.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(new ApiResponse(200, tweets, "Tweets fetched successfully"));
+});
+
 const getUserTweets = asyncHandler(async (req, res) => {
-    // TODO: get user tweets
-    const {userId}=req.params;
-    if(!userId){
-        throw new ApiError(400,"User not found");
+    const { userId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!isValidObjectId(userId)) {
+        throw new ApiError(400, "Invalid user id");
     }
-if(!isValidObjectId(userId)){
-        throw new ApiError(400,"Invalid user id")
-    }
-    const tweets= await Tweet.find({owner: userId});
-    res.status(200).json(new ApiResponse(200,{tweets},"Tweets are fetched successfully"))
+
+    const pipeline = getTweetPipeline(req, { owner: new mongoose.Types.ObjectId(userId) });
+    const aggregate = Tweet.aggregate(pipeline);
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        customLabels: { docs: "tweets", totalDocs: "totalTweets" }
+    };
+
+    const tweets = await Tweet.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(new ApiResponse(200, tweets, "User tweets fetched successfully"));
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
@@ -86,6 +150,7 @@ const deleteTweet = asyncHandler(async (req, res) => {
 
 export {
     createTweet,
+    getAllTweets,
     getUserTweets,
     updateTweet,
     deleteTweet

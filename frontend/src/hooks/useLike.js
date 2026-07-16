@@ -43,3 +43,31 @@ export function useToggleVideoLike() {
     },
   })
 }
+
+// ─── useToggleCommentLike ──────────────────────────────────────────────────
+export function useToggleCommentLike() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ commentId }) => likeApi.toggleCommentLike(commentId),
+    onSuccess: (_, variables) => {
+      // Invalidate the comments list for the associated video
+      if (variables.videoId) {
+        queryClient.invalidateQueries({ queryKey: ['comments', 'video', variables.videoId] })
+      }
+    },
+  })
+}
+
+// ─── useToggleTweetLike ────────────────────────────────────────────────────
+export function useToggleTweetLike() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (tweetId) => likeApi.toggleTweetLike(tweetId),
+    onSuccess: () => {
+      // Invalidate all tweet queries so feed and user pages update
+      queryClient.invalidateQueries({ queryKey: ['tweets'] })
+    },
+  })
+}

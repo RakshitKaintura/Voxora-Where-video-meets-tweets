@@ -5,7 +5,6 @@ import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 
 const getVideoComments = asyncHandler(async (req, res) => {
-    //TODO: get all comments for a video
     const {videoId} = req.params
     const {page = 1, limit = 10} = req.query
 
@@ -13,21 +12,72 @@ const getVideoComments = asyncHandler(async (req, res) => {
         throw new ApiError(400,"Invalid video id");
     }
 
-
-    const comments = await Comment.aggregatePaginate(
-        {video:videoId},
+    const aggregate = Comment.aggregate([
         {
-            page:parseInt(page),
-            limit:parseInt(limit),
-            sort:{createdAt:"desc"},
-            customLabels:{
-                docs:"comments"
+            $match: {
+                video: new mongoose.Types.ObjectId(videoId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "comment",
+                as: "likes"
+            }
+        },
+        {
+            $addFields: {
+                owner: { $first: "$owner" },
+                likesCount: { $size: "$likes" },
+                isLiked: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$likes.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                likes: 0
             }
         }
-    )
-    res
-    .status(200)
-    .json(new ApiResponse(200,{comments},"Comments are fetched successfully"))
+    ]);
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        sort: { createdAt: "desc" },
+        customLabels: {
+            docs: "comments",
+            totalDocs: "totalComments"
+        }
+    };
+
+    const comments = await Comment.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(
+        new ApiResponse(200, comments, "Comments fetched successfully")
+    );
 })
 
 const addComment = asyncHandler(async (req, res) => {

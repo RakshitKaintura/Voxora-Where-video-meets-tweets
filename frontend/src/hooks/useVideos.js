@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useQuery } from '@tanstack/react-query'
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import * as videoApi from '@/api/video.api'
 
 // ─── Query Keys ──────────────────────────────────────────────────────────────
@@ -34,5 +34,56 @@ export function useVideoDetail(videoId) {
       return res.data.data
     },
     enabled: !!videoId,
+  })
+}
+
+// ─── Mutations ───────────────────────────────────────────────────────────────
+export function useUploadVideo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (formData) => videoApi.publishVideo(formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'videos'] })
+    },
+  })
+}
+
+export function useUpdateVideo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: ({ videoId, formData }) => videoApi.updateVideo(videoId, formData),
+    onSuccess: (_, { videoId }) => {
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.detail(videoId) })
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'videos'] })
+    },
+  })
+}
+
+export function useDeleteVideo() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (videoId) => videoApi.deleteVideo(videoId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'videos'] })
+    },
+  })
+}
+
+export function useTogglePublishStatus() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (videoId) => videoApi.togglePublishStatus(videoId),
+    onSuccess: (_, videoId) => {
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.detail(videoId) })
+      queryClient.invalidateQueries({ queryKey: VIDEO_KEYS.all })
+      queryClient.invalidateQueries({ queryKey: ['dashboard', 'videos'] })
+    },
   })
 }

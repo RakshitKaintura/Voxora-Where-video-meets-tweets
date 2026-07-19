@@ -1,9 +1,11 @@
 import { useState, useRef } from 'react'
 import { X, UploadCloud, Image as ImageIcon, Video as VideoIcon, Loader2 } from 'lucide-react'
 import { useUploadVideo } from '@/hooks/useVideos'
-import { toast } from '@/components/shared/Toast'
+import { useToast } from '@/components/shared/Toast'
 
 export default function VideoUploadModal({ isOpen, onClose }) {
+  const toast = useToast()
+  
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [videoFile, setVideoFile] = useState(null)
@@ -12,7 +14,7 @@ export default function VideoUploadModal({ isOpen, onClose }) {
   const videoInputRef = useRef(null)
   const thumbnailInputRef = useRef(null)
 
-  const { mutate: uploadVideo, isLoading } = useUploadVideo()
+  const { mutate: uploadVideo, isPending: isLoading } = useUploadVideo()
 
   if (!isOpen) return null
 

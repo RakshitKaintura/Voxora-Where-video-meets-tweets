@@ -45,7 +45,7 @@ export default function DashboardPage() {
   const { mutate: deleteVideo, isLoading: isDeleting } = useDeleteVideo()
   const { mutate: togglePublish, isLoading: isToggling } = useTogglePublishStatus()
 
-  const videos = videosData?.pages?.flatMap((page) => page) || []
+  const videos = videosData?.pages?.flatMap((page) => page.videos || []) || []
 
   // Infinite Scroll
   const observer = useRef()

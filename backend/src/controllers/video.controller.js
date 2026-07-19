@@ -217,6 +217,13 @@ const getVideoById = asyncHandler(async (req, res) => {
         $inc: { views: 1 }
     }, { returnDocument: "after" });
 
+    // Add video to user's watch history if logged in
+    if (req.user) {
+        await User.findByIdAndUpdate(req.user._id, {
+            $addToSet: { watchHistory: videoId }
+        });
+    }
+
     // The views in the aggregate won't show the +1 immediately, so we can manually increment it in the response
     video[0].views += 1;
 

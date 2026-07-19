@@ -4,10 +4,12 @@ import { ThumbsUp, ChevronDown, ChevronUp } from 'lucide-react'
 import Avatar from '@/components/shared/Avatar'
 import { formatCount, timeAgo } from '@/lib/utils'
 import { useToggleVideoLike } from '@/hooks/useLike'
+import { useToggleSubscription } from '@/hooks/useSubscription'
 
 export default function VideoDescription({ video }) {
   const [isExpanded, setIsExpanded] = useState(false)
   const { mutate: toggleLike } = useToggleVideoLike()
+  const { mutate: toggleSubscription, isPending: isTogglingSub } = useToggleSubscription()
 
   if (!video) return null
 
@@ -36,9 +38,11 @@ export default function VideoDescription({ video }) {
               {formatCount(video.owner?.subscribersCount || 0)} subscribers
             </span>
           </div>
-          {/* Subscribe Button (Visual only for now, logic in Phase 7) */}
+          {/* Subscribe Button */}
           <button
-            className={`ml-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors ${
+            onClick={() => toggleSubscription(video.owner?._id)}
+            disabled={isTogglingSub}
+            className={`ml-2 px-4 py-2 rounded-full text-sm font-semibold transition-colors disabled:opacity-50 ${
               video.owner?.isSubscribed
                 ? 'bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--border))]'
                 : 'bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-[hsl(var(--muted-foreground))]'

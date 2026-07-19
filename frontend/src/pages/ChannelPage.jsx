@@ -8,7 +8,9 @@ import Avatar from '@/components/shared/Avatar'
 import { formatCount } from '@/lib/utils'
 import ErrorState from '@/components/shared/ErrorState'
 import TweetCard from '@/components/tweet/TweetCard'
+import VideoCard from '@/components/shared/VideoCard'
 import EmptyState from '@/components/shared/EmptyState'
+import { useVideos } from '@/hooks/useVideos'
 
 export default function ChannelPage() {
   const { username } = useRouterParams()
@@ -21,29 +23,58 @@ export default function ChannelPage() {
   const {
     data: tweetsData,
     isLoading: isTweetsLoading,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
+    fetchNextPage: fetchNextTweetsPage,
+    hasNextPage: hasNextTweetsPage,
+    isFetchingNextPage: isFetchingNextTweetsPage,
   } = useUserTweets(activeTab === 'tweets' ? channel?._id : null)
 
   const tweets = tweetsData?.pages?.flatMap((page) => page.tweets) || []
 
-  // Infinite Scroll Observer for tweets
-  const observer = useRef()
-  const lastElementRef = useCallback(
-    (node) => {
-      if (isTweetsLoading || isFetchingNextPage) return
-      if (observer.current) observer.current.disconnect()
+  // Videos query
+  const {
+    data: videosData,
+    isLoading: isVideosLoading,
+    fetchNextPage: fetchNextVideosPage,
+    hasNextPage: hasNextVideosPage,
+    isFetchingNextPage: isFetchingNextVideosPage,
+  } = useVideos({ userId: channel?._id })
 
-      observer.current = new IntersectionObserver((entries) => {
-        if (entries[0].isIntersecting && hasNextPage) {
-          fetchNextPage()
+  const videos = videosData?.pages?.flatMap((page) => page.videos) || []
+
+  // Infinite Scroll Observer for tweets
+  const tweetsObserver = useRef()
+  const lastTweetRef = useCallback(
+    (node) => {
+      if (isTweetsLoading || isFetchingNextTweetsPage) return
+      if (tweetsObserver.current) tweetsObserver.current.disconnect()
+
+      tweetsObserver.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextTweetsPage) {
+          fetchNextTweetsPage()
         }
       })
 
-      if (node) observer.current.observe(node)
+      if (node) tweetsObserver.current.observe(node)
     },
-    [isTweetsLoading, isFetchingNextPage, hasNextPage, fetchNextPage]
+    [isTweetsLoading, isFetchingNextTweetsPage, hasNextTweetsPage, fetchNextTweetsPage]
+  )
+
+  // Infinite Scroll Observer for videos
+  const videosObserver = useRef()
+  const lastVideoRef = useCallback(
+    (node) => {
+      if (isVideosLoading || isFetchingNextVideosPage) return
+      if (videosObserver.current) videosObserver.current.disconnect()
+
+      videosObserver.current = new IntersectionObserver((entries) => {
+        if (entries[0].isIntersecting && hasNextVideosPage) {
+          fetchNextVideosPage()
+        }
+      })
+
+      if (node) videosObserver.current.observe(node)
+    },
+    [isVideosLoading, isFetchingNextVideosPage, hasNextVideosPage, fetchNextVideosPage]
   )
 
   if (isLoading) {
@@ -146,12 +177,32 @@ export default function ChannelPage() {
         {/* Tab Content */}
         <div className="pb-12">
           {activeTab === 'videos' && (
-            <div className="flex items-center justify-center py-20 text-[hsl(var(--muted-foreground))]">
-              {/* Note: In a real app we'd fetch videos by owner ID. For now, empty state since we don't have user video fetching hooked up yet in Phase 7 */}
-              <EmptyState 
-                title="No videos yet" 
-                description="This channel hasn't uploaded any videos." 
-              />
+            <div className="flex flex-col gap-4">
+              {isVideosLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--red))]" />
+                </div>
+              ) : videos.length === 0 ? (
+                <div className="flex items-center justify-center py-20 text-[hsl(var(--muted-foreground))]">
+                  <EmptyState 
+                    title="No videos yet" 
+                    description="This channel hasn't uploaded any videos." 
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+                  {videos.map((video) => (
+                    <VideoCard key={video._id} video={video} />
+                  ))}
+                </div>
+              )}
+
+              <div ref={lastVideoRef} className="h-10 w-full" />
+              {isFetchingNextVideosPage && (
+                <div className="flex justify-center py-4">
+                  <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--red))]" />
+                </div>
+              )}
             </div>
           )}
 
@@ -173,8 +224,8 @@ export default function ChannelPage() {
                 ))
               )}
 
-              <div ref={lastElementRef} className="h-10 w-full" />
-              {isFetchingNextPage && (
+              <div ref={lastTweetRef} className="h-10 w-full" />
+              {isFetchingNextTweetsPage && (
                 <div className="flex justify-center py-4">
                   <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--red))]" />
                 </div>

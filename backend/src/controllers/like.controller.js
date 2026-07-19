@@ -134,15 +134,38 @@ const toggleTweetLike = asyncHandler(async (req, res) => {
 
 const getLikedVideos = asyncHandler(async (req, res) => {
     //TODO: get all liked videos
-    const {userId}=req.user?._id;
-    const likedVideos=await Like.find(
+    const userId = req.user?._id;
+    const likedVideos = await Like.aggregate([
         {
-            likedBy:userId,
-            video:{
-                $exists:true
+            $match: {
+                likedBy: userId,
+                video: { $exists: true }
             }
-        }
-    ).populate('video');
+        },
+        {
+            $lookup: {
+                from: "videos",
+                localField: "video",
+                foreignField: "_id",
+                as: "video"
+            }
+        },
+        { $unwind: "$video" },
+        {
+            $lookup: {
+                from: "users",
+                localField: "video.owner",
+                foreignField: "_id",
+                as: "video.ownerDetails"
+            }
+        },
+        {
+            $addFields: {
+                "video.owner": { $first: "$video.ownerDetails" }
+            }
+        },
+        { $project: { "video.ownerDetails": 0 } }
+    ]);
 
     res.status(200).json(
         new ApiResponse(200,{likedVideos},"Liked videos are fetched succesfully")

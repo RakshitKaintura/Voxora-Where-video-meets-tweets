@@ -1,6 +1,6 @@
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { History, ListVideo, Loader2 } from 'lucide-react'
+import { History, ListVideo, ThumbsUp, Loader2 } from 'lucide-react'
 import { useUserPlaylists } from '@/hooks/usePlaylists'
 import api from '@/api/axios'
 import { useQuery } from '@tanstack/react-query'
@@ -19,6 +19,17 @@ function useWatchHistory() {
   })
 }
 
+// A simple hook to fetch liked videos
+function useLikedVideos() {
+  return useQuery({
+    queryKey: ['likedVideos'],
+    queryFn: async () => {
+      const res = await api.get('/likes/videos')
+      return res.data.data?.likedVideos || []
+    },
+  })
+}
+
 export default function LibraryPage() {
   const { user } = useSelector((state) => state.auth)
   
@@ -31,6 +42,11 @@ export default function LibraryPage() {
     data: history, 
     isLoading: isHistoryLoading 
   } = useWatchHistory()
+
+  const {
+    data: likedVideos,
+    isLoading: isLikedVideosLoading
+  } = useLikedVideos()
 
   if (!user) {
     return (
@@ -110,7 +126,37 @@ export default function LibraryPage() {
           </div>
         )}
       </section>
-      
+
+      <hr className="border-[hsl(var(--border))]" />
+
+      {/* ── Liked Videos Section ── */}
+      <section>
+        <div className="flex items-center gap-3 mb-6">
+          <ThumbsUp className="w-6 h-6 text-[hsl(var(--red))]" />
+          <h2 className="text-2xl font-bold text-[hsl(var(--foreground))]">Liked Videos</h2>
+        </div>
+
+        {isLikedVideosLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--red))]" />
+          </div>
+        ) : likedVideos?.length === 0 ? (
+          <EmptyState
+            title="No liked videos"
+            description="You haven't liked any videos yet."
+          />
+        ) : (
+          <div className="flex gap-4 overflow-x-auto pb-4 snap-x hide-scrollbar">
+            {likedVideos?.map((like) => (
+              <div key={like._id} className="min-w-[280px] sm:min-w-[320px] snap-start">
+                {/* like.video contains the fully populated video object thanks to our backend aggregation fix */}
+                <VideoCard video={like.video} />
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
     </div>
   )
 }

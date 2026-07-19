@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom'
+import { NavLink, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import {
   Home,
@@ -47,6 +47,26 @@ const NAV_SECTIONS = [
 
 export default function Sidebar() {
   const sidebarOpen = useSelector((state) => state.ui.sidebarOpen)
+  const location = useLocation()
+
+  const checkIsActive = (to) => {
+    if (to === '/') return location.pathname === '/'
+    
+    const [toPath, toSearch] = to.split('?')
+    
+    if (location.pathname !== toPath) return false
+    
+    if (toSearch) {
+      return location.search.includes(toSearch)
+    }
+    
+    if (toPath === '/library' && location.search.includes('tab=')) {
+      return false
+    }
+    
+    // for e.g. /dashboard or /tweets matching
+    return location.pathname.startsWith(toPath)
+  }
 
   return (
     <aside
@@ -72,30 +92,31 @@ export default function Sidebar() {
           )}
 
           {/* Nav items */}
-          {section.items.map(({ icon: Icon, label, to }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={to === '/'}
-              className={({ isActive }) =>
-                cn(
+          {section.items.map(({ icon: Icon, label, to }) => {
+            const isActive = checkIsActive(to)
+            
+            return (
+              <NavLink
+                key={to}
+                to={to}
+                className={cn(
                   'flex items-center gap-3 px-3 py-2 mx-2 rounded-xl text-sm font-medium transition-all duration-150',
                   sidebarOpen ? 'justify-start' : 'justify-center',
                   isActive
                     ? 'font-semibold'
                     : 'hover:opacity-100 opacity-70 hover:bg-white/8'
-                )
-              }
-              style={({ isActive }) => ({
-                backgroundColor: isActive ? 'hsl(var(--accent))' : 'transparent',
-                color: 'hsl(var(--foreground))',
-              })}
-              title={!sidebarOpen ? label : undefined}
-            >
-              <Icon className="w-5 h-5 shrink-0" />
-              {sidebarOpen && <span className="truncate">{label}</span>}
-            </NavLink>
-          ))}
+                )}
+                style={{
+                  backgroundColor: isActive ? 'hsl(var(--accent))' : 'transparent',
+                  color: 'hsl(var(--foreground))',
+                }}
+                title={!sidebarOpen ? label : undefined}
+              >
+                <Icon className="w-5 h-5 shrink-0" />
+                {sidebarOpen && <span className="truncate">{label}</span>}
+              </NavLink>
+            )
+          })}
         </div>
       ))}
     </aside>

@@ -5,9 +5,12 @@ import Avatar from '@/components/shared/Avatar'
 import { formatCount, timeAgo } from '@/lib/utils'
 import { useToggleVideoLike } from '@/hooks/useLike'
 import { useToggleSubscription } from '@/hooks/useSubscription'
+import PlaylistModal from '@/components/playlist/PlaylistModal'
+import { FolderPlus } from 'lucide-react'
 
 export default function VideoDescription({ video }) {
   const [isExpanded, setIsExpanded] = useState(false)
+  const [isPlaylistModalOpen, setIsPlaylistModalOpen] = useState(false)
   const { mutate: toggleLike } = useToggleVideoLike()
   const { mutate: toggleSubscription, isPending: isTogglingSub } = useToggleSubscription()
 
@@ -52,7 +55,7 @@ export default function VideoDescription({ video }) {
           </button>
         </div>
 
-        {/* Actions (Like) */}
+        {/* Actions (Like & Save) */}
         <div className="flex items-center gap-2">
           <button
             onClick={() => toggleLike(video._id)}
@@ -64,6 +67,13 @@ export default function VideoDescription({ video }) {
           >
             <ThumbsUp className={`w-5 h-5 ${video.isLiked ? 'fill-current' : ''}`} />
             <span>{formatCount(video.likesCount)}</span>
+          </button>
+          <button
+            onClick={() => setIsPlaylistModalOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-full font-medium transition-colors bg-[hsl(var(--muted))] text-[hsl(var(--foreground))] hover:bg-[hsl(var(--border))]"
+          >
+            <FolderPlus className="w-5 h-5" />
+            <span>Save</span>
           </button>
         </div>
       </div>
@@ -93,6 +103,12 @@ export default function VideoDescription({ video }) {
           {isExpanded ? 'Show less' : 'Show more'}
         </button>
       </div>
+
+      <PlaylistModal 
+        videoId={video._id}
+        isOpen={isPlaylistModalOpen}
+        onClose={() => setIsPlaylistModalOpen(false)}
+      />
     </div>
   )
 }

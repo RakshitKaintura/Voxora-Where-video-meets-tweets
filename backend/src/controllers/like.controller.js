@@ -143,6 +143,9 @@ const getLikedVideos = asyncHandler(async (req, res) => {
             }
         },
         {
+            $sort: { createdAt: -1 }
+        },
+        {
             $lookup: {
                 from: "videos",
                 localField: "video",

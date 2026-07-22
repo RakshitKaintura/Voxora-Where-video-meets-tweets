@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { 
   Users, PlaySquare, Eye, Heart, 
   Upload, Loader2, MoreVertical, 
-  Trash2, Edit2, CheckCircle2, XCircle 
+  Trash2, Edit2, CheckCircle2, XCircle, FolderPlus
 } from 'lucide-react'
 import { useChannelStats, useDashboardVideos } from '@/hooks/useDashboard'
 import { useDeleteVideo, useTogglePublishStatus } from '@/hooks/useVideos'
@@ -11,6 +11,10 @@ import VideoUploadModal from '@/components/dashboard/VideoUploadModal'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import ErrorState from '@/components/shared/ErrorState'
 import EmptyState from '@/components/shared/EmptyState'
+import PlaylistModal from '@/components/playlist/PlaylistModal'
+import PlaylistCard from '@/components/playlist/PlaylistCard'
+import { useSelector } from 'react-redux'
+import { useUserPlaylists } from '@/hooks/usePlaylists'
 
 function StatCard({ icon: Icon, title, value }) {
   return (
@@ -29,10 +33,15 @@ function StatCard({ icon: Icon, title, value }) {
 }
 
 export default function DashboardPage() {
+  const { user } = useSelector((state) => state.auth)
+  const [activeTab, setActiveTab] = useState('videos') // 'videos' or 'playlists'
+  
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [deletingVideoId, setDeletingVideoId] = useState(null)
+  const [playlistModalVideoId, setPlaylistModalVideoId] = useState(null)
   
   const { data: stats, isLoading: isStatsLoading, isError: isStatsError, refetch: refetchStats } = useChannelStats()
+  const { data: playlists, isLoading: isPlaylistsLoading } = useUserPlaylists(activeTab === 'playlists' ? user?._id : null)
   
   const { 
     data: videosData, 
@@ -110,11 +119,41 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      {/* ── Video Management Table ── */}
-      <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden shadow-sm">
-        <div className="p-6 border-b border-[hsl(var(--border))]">
-          <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">Your Videos</h2>
-        </div>
+      {/* ── Tabs ── */}
+      <div className="flex gap-8 border-b border-[hsl(var(--border))] mt-4">
+        <button
+          onClick={() => setActiveTab('videos')}
+          className={`pb-4 text-sm font-semibold transition-colors relative ${
+            activeTab === 'videos'
+              ? 'text-[hsl(var(--foreground))]'
+              : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+          }`}
+        >
+          VIDEOS
+          {activeTab === 'videos' && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[hsl(var(--foreground))]" />
+          )}
+        </button>
+        <button
+          onClick={() => setActiveTab('playlists')}
+          className={`pb-4 text-sm font-semibold transition-colors relative ${
+            activeTab === 'playlists'
+              ? 'text-[hsl(var(--foreground))]'
+              : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+          }`}
+        >
+          PLAYLISTS
+          {activeTab === 'playlists' && (
+            <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[hsl(var(--foreground))]" />
+          )}
+        </button>
+      </div>
+
+      {activeTab === 'videos' && (
+        <div className="bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-2xl overflow-hidden shadow-sm">
+          <div className="p-6 border-b border-[hsl(var(--border))]">
+            <h2 className="text-xl font-bold text-[hsl(var(--foreground))]">Your Videos</h2>
+          </div>
         
         {isVideosLoading ? (
           <div className="flex justify-center py-20">
@@ -193,13 +232,22 @@ export default function DashboardPage() {
 
                       {/* Options */}
                       <td className="px-6 py-4 text-right">
-                        <button
-                          onClick={() => setDeletingVideoId(video._id)}
-                          className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--red))] hover:bg-[hsl(var(--red))]/10 rounded-full transition-colors"
-                          title="Delete Video"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setPlaylistModalVideoId(video._id)}
+                            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
+                            title="Save to Playlist"
+                          >
+                            <FolderPlus className="w-5 h-5" />
+                          </button>
+                          <button
+                            onClick={() => setDeletingVideoId(video._id)}
+                            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--red))] hover:bg-[hsl(var(--red))]/10 rounded-full transition-colors"
+                            title="Delete Video"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   )
@@ -215,6 +263,30 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+      )}
+
+      {activeTab === 'playlists' && (
+        <div className="flex flex-col gap-4">
+          {isPlaylistsLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--red))]" />
+            </div>
+          ) : playlists?.length === 0 ? (
+            <div className="flex items-center justify-center py-20 text-[hsl(var(--muted-foreground))]">
+              <EmptyState 
+                title="No playlists yet" 
+                description="You haven't created any playlists." 
+              />
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+              {playlists.map((playlist) => (
+                <PlaylistCard key={playlist._id} playlist={playlist} />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Modals */}
       <VideoUploadModal 
@@ -231,6 +303,12 @@ export default function DashboardPage() {
         confirmText="Delete"
         isDestructive={true}
         isLoading={isDeleting}
+      />
+
+      <PlaylistModal 
+        videoId={playlistModalVideoId}
+        isOpen={!!playlistModalVideoId}
+        onClose={() => setPlaylistModalVideoId(null)}
       />
     </div>
   )

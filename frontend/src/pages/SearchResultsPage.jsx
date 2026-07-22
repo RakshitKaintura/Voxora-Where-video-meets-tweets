@@ -7,8 +7,15 @@ import VideoCard from '@/components/shared/VideoCard'
 export default function SearchResultsPage() {
   const [searchParams] = useSearchParams()
   const query = searchParams.get('q') || ''
+  const sort = searchParams.get('sort') || ''
 
-  // Fetch videos matching the query
+  const filters = { query }
+  if (sort === 'popular') {
+    filters.sortBy = 'views'
+    filters.sortType = 'desc'
+  }
+
+  // Fetch videos matching the query and filters
   const {
     data,
     isLoading,
@@ -17,7 +24,7 @@ export default function SearchResultsPage() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useVideos({ query })
+  } = useVideos(filters)
 
   const videos = data?.pages?.flatMap((page) => page.videos) || []
 
@@ -58,7 +65,7 @@ export default function SearchResultsPage() {
       {/* ── Search Header ── */}
       <div className="flex flex-col gap-2 mb-4">
         <h1 className="text-2xl sm:text-3xl font-bold text-[hsl(var(--foreground))]">
-          Search results
+          {sort === 'popular' ? 'Trending Videos' : 'Search results'}
         </h1>
         {query && (
           <p className="text-[hsl(var(--muted-foreground))]">

@@ -2,6 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { Link, useParams as useRouterParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { useChannelProfile } from '@/hooks/useUser'
+import { useUserPlaylists } from '@/hooks/usePlaylists'
 import { useToggleSubscription } from '@/hooks/useSubscription'
 import { useUserTweets } from '@/hooks/useTweets'
 import Avatar from '@/components/shared/Avatar'
@@ -9,6 +10,7 @@ import { formatCount } from '@/lib/utils'
 import ErrorState from '@/components/shared/ErrorState'
 import TweetCard from '@/components/tweet/TweetCard'
 import VideoCard from '@/components/shared/VideoCard'
+import PlaylistCard from '@/components/playlist/PlaylistCard'
 import EmptyState from '@/components/shared/EmptyState'
 import { useVideos } from '@/hooks/useVideos'
 
@@ -17,7 +19,9 @@ export default function ChannelPage() {
   const { data: channel, isLoading, isError, error, refetch } = useChannelProfile(username)
   const { mutate: toggleSubscription, isLoading: isToggling } = useToggleSubscription()
 
-  const [activeTab, setActiveTab] = useState('videos') // 'videos' or 'tweets'
+  const [activeTab, setActiveTab] = useState('videos') // 'videos', 'playlists', or 'tweets'
+
+  const { data: playlists, isLoading: isPlaylistsLoading } = useUserPlaylists(activeTab === 'playlists' ? channel?._id : null)
 
   // Tweets query (only enabled if we are on tweets tab and have channel id)
   const {
@@ -160,6 +164,19 @@ export default function ChannelPage() {
             )}
           </button>
           <button
+            onClick={() => setActiveTab('playlists')}
+            className={`pb-4 text-sm font-semibold transition-colors relative ${
+              activeTab === 'playlists'
+                ? 'text-[hsl(var(--foreground))]'
+                : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))]'
+            }`}
+          >
+            PLAYLISTS
+            {activeTab === 'playlists' && (
+              <div className="absolute bottom-0 left-0 w-full h-0.5 bg-[hsl(var(--foreground))]" />
+            )}
+          </button>
+          <button
             onClick={() => setActiveTab('tweets')}
             className={`pb-4 text-sm font-semibold transition-colors relative ${
               activeTab === 'tweets'
@@ -201,6 +218,29 @@ export default function ChannelPage() {
               {isFetchingNextVideosPage && (
                 <div className="flex justify-center py-4">
                   <Loader2 className="w-6 h-6 animate-spin text-[hsl(var(--red))]" />
+                </div>
+              )}
+            </div>
+          )}
+
+          {activeTab === 'playlists' && (
+            <div className="flex flex-col gap-4">
+              {isPlaylistsLoading ? (
+                <div className="flex justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-[hsl(var(--red))]" />
+                </div>
+              ) : playlists?.length === 0 ? (
+                <div className="flex items-center justify-center py-20 text-[hsl(var(--muted-foreground))]">
+                  <EmptyState 
+                    title="No playlists yet" 
+                    description="This channel hasn't created any playlists." 
+                  />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 gap-4 sm:gap-6">
+                  {playlists.map((playlist) => (
+                    <PlaylistCard key={playlist._id} playlist={playlist} />
+                  ))}
                 </div>
               )}
             </div>

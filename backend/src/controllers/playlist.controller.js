@@ -42,7 +42,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
                 from: "videos",
                 localField: "videos",
                 foreignField: "_id",
-                as: "videos",
+                as: "thumbnailVideo",
                 pipeline: [
                     { $limit: 1 },
                     { $project: { thumbnail: 1 } }
@@ -52,7 +52,7 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
         {
             $addFields: {
                 totalVideos: { $size: "$videos" },
-                coverImage: { $first: "$videos.thumbnail" }
+                coverImage: { $first: "$thumbnailVideo.thumbnail" }
             }
         },
         {
@@ -61,7 +61,8 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
                 description: 1,
                 totalVideos: 1,
                 coverImage: 1,
-                updatedAt: 1
+                updatedAt: 1,
+                videos: 1
             }
         }
     ]);

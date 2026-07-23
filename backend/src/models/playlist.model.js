@@ -19,6 +19,11 @@ const playlistSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: "User"
     },
+    type: {
+        type: String,
+        enum: ["personal", "creator"],
+        default: "personal"
+    }
 }, {timestamps: true})
 
 

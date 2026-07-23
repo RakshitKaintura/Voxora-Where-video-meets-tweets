@@ -13,7 +13,8 @@ export function useVideos(filters = {}) {
   return useInfiniteQuery({
     queryKey: VIDEO_KEYS.list(filters),
     queryFn: async ({ pageParam = 1 }) => {
-      const res = await videoApi.getAllVideos({ ...filters, page: pageParam, limit: 12 })
+      const limit = filters.limit || 12;
+      const res = await videoApi.getAllVideos({ ...filters, page: pageParam, limit })
       return res.data.data
     },
     getNextPageParam: (lastPage) => {

@@ -4,10 +4,10 @@ import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
+import { uploadOnCloudinary } from "../utils/cloudinary.js"
 
 const createTweet = asyncHandler(async (req, res) => {
-    //TODO: create tweet
-    const {content}=req.body;
+    const {content, parentTweet}=req.body;
     const userId = req.user?._id; 
     if (!userId) {
       throw new ApiError(401, "Unauthorized: user not found");  
@@ -17,10 +17,19 @@ const createTweet = asyncHandler(async (req, res) => {
     throw new ApiError(400,"Content is required for the tweet");
     }
 
+    let imageUrl = null;
+    if (req.file?.path) {
+        const imageFile = await uploadOnCloudinary(req.file.path);
+        if (imageFile) {
+            imageUrl = imageFile.url;
+        }
+    }
 
    const tweet=await Tweet.create({
         content,
-        owner:userId
+        image: imageUrl,
+        owner:userId,
+        parentTweet: parentTweet || null
     });
 
     if(!tweet){
@@ -29,7 +38,6 @@ const createTweet = asyncHandler(async (req, res) => {
     return res.status(200).json(
         new ApiResponse(200,tweet,"Tweet created sucessfully")
     )
-
 })
 
 const getTweetPipeline = (req, matchConditions) => [
@@ -54,9 +62,18 @@ const getTweetPipeline = (req, matchConditions) => [
         }
     },
     {
+        $lookup: {
+            from: "tweets",
+            localField: "_id",
+            foreignField: "parentTweet",
+            as: "replies"
+        }
+    },
+    {
         $addFields: {
             owner: { $first: "$owner" },
             likesCount: { $size: "$likes" },
+            repliesCount: { $size: "$replies" },
             isLiked: {
                 $cond: {
                     if: { $in: [req.user?._id, "$likes.likedBy"] },
@@ -66,14 +83,14 @@ const getTweetPipeline = (req, matchConditions) => [
             }
         }
     },
-    { $project: { likes: 0 } },
+    { $project: { likes: 0, replies: 0 } },
     { $sort: { createdAt: -1 } }
 ];
 
 const getAllTweets = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10 } = req.query;
 
-    const pipeline = getTweetPipeline(req, {});
+    const pipeline = getTweetPipeline(req, { parentTweet: null });
     const aggregate = Tweet.aggregate(pipeline);
 
     const options = {
@@ -95,7 +112,10 @@ const getUserTweets = asyncHandler(async (req, res) => {
         throw new ApiError(400, "Invalid user id");
     }
 
-    const pipeline = getTweetPipeline(req, { owner: new mongoose.Types.ObjectId(userId) });
+    const pipeline = getTweetPipeline(req, { 
+        owner: new mongoose.Types.ObjectId(userId),
+        parentTweet: null
+    });
     const aggregate = Tweet.aggregate(pipeline);
 
     const options = {
@@ -110,21 +130,33 @@ const getUserTweets = asyncHandler(async (req, res) => {
 })
 
 const updateTweet = asyncHandler(async (req, res) => {
-    //TODO: update tweet
     const {tweetId}= req.params;
     if(!tweetId){
         throw new ApiError(400,"Did not got tweet id ")
     }
-    const cont=await req.body.content;
+    const cont = req.body.content;
     if(!cont){
         throw new ApiError(400,"Insert tweet content")
     }
-    await Tweet.findByIdAndUpdate(tweetId,
 
+    let imageUrl = undefined;
+    if (req.file?.path) {
+        const imageFile = await uploadOnCloudinary(req.file.path);
+        if (imageFile) {
+            imageUrl = imageFile.url;
+        }
+    }
+
+    const updateData = { content: cont };
+    if (imageUrl !== undefined) {
+        updateData.image = imageUrl;
+    } else if (req.body.image === "null") {
+        updateData.image = null; // allow removing image
+    }
+
+    await Tweet.findByIdAndUpdate(tweetId,
         {
-            $set:{
-                content:cont
-            }
+            $set: updateData
         },{
             returnDocument: "after"
         }
@@ -134,6 +166,7 @@ const updateTweet = asyncHandler(async (req, res) => {
         new ApiResponse(200,{},"tweet updated succesfully")
     )
 })
+
 
 const deleteTweet = asyncHandler(async (req, res) => {
     //TODO: delete tweet
@@ -148,10 +181,37 @@ const deleteTweet = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, {},"Tweet deleted sucessfuly")); 
 })
 
+const getTweetReplies = asyncHandler(async (req, res) => {
+    const { tweetId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!isValidObjectId(tweetId)) {
+        throw new ApiError(400, "Invalid tweet id");
+    }
+
+    const pipeline = getTweetPipeline(req, { parentTweet: new mongoose.Types.ObjectId(tweetId) });
+    // Override the sort order for replies (oldest first usually for threads)
+    pipeline.pop(); 
+    pipeline.push({ $sort: { createdAt: 1 } });
+    
+    const aggregate = Tweet.aggregate(pipeline);
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        customLabels: { docs: "tweets", totalDocs: "totalTweets" }
+    };
+
+    const replies = await Tweet.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(new ApiResponse(200, replies, "Tweet replies fetched successfully"));
+});
+
 export {
     createTweet,
-    getAllTweets,
     getUserTweets,
     updateTweet,
-    deleteTweet
+    deleteTweet,
+    getAllTweets,
+    getTweetReplies
 }

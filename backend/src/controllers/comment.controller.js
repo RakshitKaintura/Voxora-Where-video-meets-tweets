@@ -15,7 +15,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
     const aggregate = Comment.aggregate([
         {
             $match: {
-                video: new mongoose.Types.ObjectId(videoId)
+                video: new mongoose.Types.ObjectId(videoId),
+                parentComment: null
             }
         },
         {
@@ -44,9 +45,18 @@ const getVideoComments = asyncHandler(async (req, res) => {
             }
         },
         {
+            $lookup: {
+                from: "comments",
+                localField: "_id",
+                foreignField: "parentComment",
+                as: "replies"
+            }
+        },
+        {
             $addFields: {
                 owner: { $first: "$owner" },
                 likesCount: { $size: "$likes" },
+                repliesCount: { $size: "$replies" },
                 isLiked: {
                     $cond: {
                         if: { $in: [req.user?._id, "$likes.likedBy"] },
@@ -58,7 +68,8 @@ const getVideoComments = asyncHandler(async (req, res) => {
         },
         {
             $project: {
-                likes: 0
+                likes: 0,
+                replies: 0
             }
         }
     ]);
@@ -81,11 +92,10 @@ const getVideoComments = asyncHandler(async (req, res) => {
 })
 
 const addComment = asyncHandler(async (req, res) => {
-    // TODO: add a comment to a video
     const {videoId}=req.params
     const user_id = req.user?._id;
-    const {content}=req.body
-if(!isValidObjectId(videoId)){
+    const {content, parentComment}=req.body
+    if(!isValidObjectId(videoId)){
         throw new ApiError(400,"Invalid video id")
     }
     if(!content.trim()){
@@ -95,7 +105,8 @@ if(!isValidObjectId(videoId)){
         {
             content:content,
             video:videoId,
-            owner:user_id
+            owner:user_id,
+            parentComment: parentComment || null
         }
     )
 
@@ -149,9 +160,86 @@ const deleteComment = asyncHandler(async (req, res) => {
     )
 })
 
+const getCommentReplies = asyncHandler(async (req, res) => {
+    const { commentId } = req.params;
+    const { page = 1, limit = 10 } = req.query;
+
+    if (!isValidObjectId(commentId)) {
+        throw new ApiError(400, "Invalid comment id");
+    }
+
+    const aggregate = Comment.aggregate([
+        {
+            $match: {
+                parentComment: new mongoose.Types.ObjectId(commentId)
+            }
+        },
+        {
+            $lookup: {
+                from: "users",
+                localField: "owner",
+                foreignField: "_id",
+                as: "owner",
+                pipeline: [
+                    {
+                        $project: {
+                            fullName: 1,
+                            username: 1,
+                            avatar: 1
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            $lookup: {
+                from: "likes",
+                localField: "_id",
+                foreignField: "comment",
+                as: "likes"
+            }
+        },
+        {
+            $addFields: {
+                owner: { $first: "$owner" },
+                likesCount: { $size: "$likes" },
+                isLiked: {
+                    $cond: {
+                        if: { $in: [req.user?._id, "$likes.likedBy"] },
+                        then: true,
+                        else: false
+                    }
+                }
+            }
+        },
+        {
+            $project: {
+                likes: 0
+            }
+        }
+    ]);
+
+    const options = {
+        page: parseInt(page, 10),
+        limit: parseInt(limit, 10),
+        sort: { createdAt: "asc" }, // Replies usually sorted oldest first
+        customLabels: {
+            docs: "comments",
+            totalDocs: "totalComments"
+        }
+    };
+
+    const replies = await Comment.aggregatePaginate(aggregate, options);
+
+    res.status(200).json(
+        new ApiResponse(200, replies, "Replies fetched successfully")
+    );
+});
+
 export {
     getVideoComments, 
     addComment, 
     updateComment,
-     deleteComment
+    deleteComment,
+    getCommentReplies
     }

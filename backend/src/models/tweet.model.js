@@ -7,9 +7,18 @@ const tweetSchema = new Schema({
         type: String,
         required: true
     },
+    image: {
+        type: String, // Cloudinary URL
+        default: null
+    },
     owner: {
         type: Schema.Types.ObjectId,
         ref: "User"
+    },
+    parentTweet: {
+        type: Schema.Types.ObjectId,
+        ref: "Tweet",
+        default: null
     }
 }, {timestamps: true})
 

@@ -34,8 +34,10 @@
   --ring: 0 0% 83.1%;
 
   /* Brand colors */
-  --red: 0 84% 60%;           /* YouTube-style subscribe/logo red */
-  --blue: 217 91% 60%;        /* Twitter-style action blue */
+  --red: 0 84% 60%;
+  /* YouTube-style subscribe/logo red */
+  --blue: 217 91% 60%;
+  /* Twitter-style action blue */
   --sidebar-bg: 0 0% 5%;
   --sidebar-hover: 0 0% 10%;
 
@@ -45,7 +47,9 @@
 /* ================================
    BASE RESET
    ================================ */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   border-color: hsl(var(--border));
 }
@@ -103,7 +107,8 @@ body {
 /* ================================
    TRANSITIONS
    ================================ */
-a, button {
+a,
+button {
   transition: opacity 0.15s ease, color 0.15s ease, background-color 0.15s ease;
 }
 
@@ -111,17 +116,20 @@ a, button {
    SHIMMER ANIMATION (Skeleton loader)
    ================================ */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    hsl(var(--muted)) 25%,
-    hsl(0 0% 18%) 50%,
-    hsl(var(--muted)) 75%
-  );
+  background: linear-gradient(90deg,
+      hsl(var(--muted)) 25%,
+      hsl(0 0% 18%) 50%,
+      hsl(var(--muted)) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius);

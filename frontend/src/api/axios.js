@@ -5,9 +5,6 @@ import { clearUser } from '@/store/slices/authSlice'
 const axiosInstance = axios.create({
   baseURL: '/api/v1',
   withCredentials: true, // send/receive cookies (accessToken, refreshToken)
-  headers: {
-    'Content-Type': 'application/json',
-  },
 })
 
 axiosInstance.interceptors.response.use(

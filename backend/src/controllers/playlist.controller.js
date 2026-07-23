@@ -3,10 +3,11 @@ import { Playlist } from "../models/playlist.model.js"
 import { ApiError } from "../utils/ApiError.js"
 import { ApiResponse } from "../utils/ApiResponse.js"
 import { asyncHandler } from "../utils/asyncHandler.js"
+import { Video } from "../models/video.model.js"
 
 
 const createPlaylist = asyncHandler(async (req, res) => {
-    const { name, description } = req.body
+    const { name, description, type } = req.body
     if (!name || !description) {
         throw new ApiError(400, "Name and description is required");
     }
@@ -14,6 +15,7 @@ const createPlaylist = asyncHandler(async (req, res) => {
     const playlist = await Playlist.create({
         name,
         description,
+        type: type || "personal",
         owner: req.user._id
     });
     if (!playlist) {
@@ -31,11 +33,16 @@ const getUserPlaylists = asyncHandler(async (req, res) => {
     if (!isValidObjectId(userId)) {
         throw new ApiError(400, "Invalid user id")
     }
+    const isOwner = req.user?._id?.toString() === userId.toString();
+    const matchConditions = { owner: new mongoose.Types.ObjectId(userId) };
+    
+    if (!isOwner) {
+        matchConditions.type = "creator"; // Hide personal playlists from other users
+    }
+
     const playlists = await Playlist.aggregate([
         {
-            $match: {
-                owner: new mongoose.Types.ObjectId(userId)
-            }
+            $match: matchConditions
         },
         {
             $lookup: {
@@ -133,6 +140,10 @@ const getPlaylistById = asyncHandler(async (req, res) => {
         throw new ApiError(404, "Playlist not found");
     }
 
+    if (playlist[0].type === "personal" && playlist[0].owner._id.toString() !== req.user?._id?.toString()) {
+        throw new ApiError(403, "You do not have permission to view this personal playlist");
+    }
+
     return res.status(200).json(
         new ApiResponse(200, playlist[0], "Successfully fetched playlist by id")
     )
@@ -147,6 +158,21 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
     if ( !isValidObjectId(videoId)) {
         throw new ApiError(400, "video id not valid")
     }
+    const playlist = await Playlist.findById(playlistId);
+    if (!playlist) {
+        throw new ApiError(404, "Playlist not found");
+    }
+
+    if (playlist.type === "creator") {
+        const video = await Video.findById(videoId);
+        if (!video) {
+            throw new ApiError(404, "Video not found");
+        }
+        if (video.owner.toString() !== playlist.owner.toString()) {
+            throw new ApiError(403, "Creator playlists can only contain videos uploaded by the playlist owner.");
+        }
+    }
+
     const playlistVideos = await Playlist.findByIdAndUpdate(
         playlistId,
         {
@@ -157,7 +183,6 @@ const addVideoToPlaylist = asyncHandler(async (req, res) => {
         {
             returnDocument: "after"
         }
-
     )
     res.status(200).json(
         new ApiResponse(200, { playlistVideos }, "Video is added to playlist sucessfully")

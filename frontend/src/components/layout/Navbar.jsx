@@ -35,7 +35,7 @@ export default function Navbar() {
 
   return (
     <header
-      className="sticky top-0 z-50 flex h-14 items-center justify-between gap-4 px-4 border-b"
+      className="sticky top-0 z-50 flex h-20 items-center justify-between gap-4 px-4 border-b"
       style={{
         backgroundColor: 'hsl(var(--background) / 0.95)',
         borderColor: 'hsl(var(--border))',
@@ -52,14 +52,11 @@ export default function Navbar() {
           <Menu className="w-5 h-5" style={{ color: 'hsl(var(--foreground))' }} />
         </button>
 
-        <Link to="/" className="flex items-center gap-1.5 font-bold text-xl tracking-tight">
-          <span
-            className="px-1.5 py-0.5 rounded text-sm font-black"
-            style={{ backgroundColor: 'hsl(var(--red))', color: 'white' }}
-          >
-            YT
+        <Link to="/" className="flex items-center gap-3">
+          <img src="/logo.png" alt="Voxora Logo" className="h-20 w-auto object-contain scale-110 origin-left" />
+          <span className="text-2xl font-black tracking-tighter" style={{ color: 'hsl(var(--foreground))' }}>
+            Voxora
           </span>
-          <span style={{ color: 'hsl(var(--foreground))' }}>Verse</span>
         </Link>
       </div>
 

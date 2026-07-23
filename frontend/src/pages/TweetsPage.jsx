@@ -44,8 +44,15 @@ export default function TweetsPage() {
     [isLoading, isFetchingNextPage, hasNextPage, fetchNextPage]
   )
 
-  const handleCreate = (content, resetForm) => {
-    createTweet(content, {
+  const handleCreate = (data, resetForm) => {
+    let submitData = { content: data.content }
+    if (data.image) {
+      submitData = new FormData()
+      submitData.append('content', data.content)
+      submitData.append('image', data.image)
+    }
+
+    createTweet(submitData, {
       onSuccess: () => resetForm(),
     })
   }
@@ -68,7 +75,7 @@ export default function TweetsPage() {
       <div className="flex flex-col gap-6">
         <div className="flex items-center gap-3">
           <MessageSquare className="w-8 h-8 text-[hsl(var(--red))]" />
-          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Community Tweets</h1>
+          <h1 className="text-3xl font-bold text-[hsl(var(--foreground))]">Twitter</h1>
         </div>
 
         {user ? (

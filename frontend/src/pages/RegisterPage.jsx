@@ -8,12 +8,12 @@ import { useRegister } from '@/hooks/useAuth'
 
 // ─── Validation schema ────────────────────────────────────────────────────────
 const registerSchema = z.object({
-  fullName:  z.string().min(2, 'Full name must be at least 2 characters'),
-  username:  z.string()
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  username: z.string()
     .min(3, 'Username must be at least 3 characters')
     .regex(/^[a-z0-9_]+$/, 'Only lowercase letters, numbers, and underscores'),
-  email:     z.string().email('Enter a valid email address'),
-  password:  z.string().min(8, 'Password must be at least 8 characters'),
+  email: z.string().email('Enter a valid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
 })
 
 // ─── Image preview helper ─────────────────────────────────────────────────────
@@ -145,29 +145,43 @@ export default function RegisterPage() {
 
   return (
     <div
-      className="min-h-screen flex items-center justify-center px-4 py-12"
-      style={{ backgroundColor: 'hsl(var(--background))' }}
+      className="min-h-screen flex flex-col items-center justify-center px-4 py-12 gap-10 relative"
+      style={{
+        backgroundImage: 'linear-gradient(to bottom, rgba(0,0,0,0.4), rgba(0,0,0,0.8)), url(/auth-bg.png)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed'
+      }}
     >
+      <div className="text-center max-w-4xl animate-in fade-in slide-in-from-bottom-4 duration-500 mt-2 mb-4 flex flex-col gap-3">
+        <h1 className="text-7xl md:text-8xl font-black tracking-tighter flex justify-center" style={{ filter: 'drop-shadow(0 10px 20px rgba(0,0,0,0.9))' }}>
+          <span className="text-blue-500" style={{ textShadow: '0 0 30px rgba(59,130,246,0.6)' }}>Vox</span>
+          <span className="text-red-500" style={{ textShadow: '0 0 30px rgba(239,68,68,0.6)' }}>ora</span>
+        </h1>
+        <p className="text-2xl md:text-4xl font-semibold tracking-tight text-white" style={{ textShadow: '0 4px 12px rgba(0,0,0,1), 0 2px 4px rgba(0,0,0,0.8)' }}>
+          Where video <span className="text-cyan-400 font-black" style={{ textShadow: '0 0 15px rgba(34,211,238,0.6), 0 4px 12px rgba(0,0,0,1)' }}>meets</span> tweets
+        </p>
+      </div>
+
       <div
-        className="w-full max-w-lg rounded-2xl p-8 shadow-2xl"
+        className="w-full max-w-lg rounded-3xl p-8 shadow-2xl animate-in fade-in slide-in-from-bottom-6 duration-700 bg-black/10 backdrop-blur-2xl border border-white/10"
         style={{
-          backgroundColor: 'hsl(var(--card))',
-          border: '1px solid hsl(var(--border))',
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
         }}
       >
         {/* Logo */}
         <div className="flex flex-col items-center gap-2 mb-8">
-          <div
-            className="w-12 h-12 rounded-2xl flex items-center justify-center text-xl font-black"
-            style={{ backgroundColor: 'hsl(var(--red))', color: 'white' }}
-          >
-            YT
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Voxora Logo" className="h-28 w-auto object-contain mb-2 scale-110" />
+            <span className="text-4xl font-black tracking-tighter" style={{ color: 'hsl(var(--foreground))' }}>
+              Voxora
+            </span>
           </div>
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--foreground))' }}>
             Create your account
           </h1>
           <p className="text-sm" style={{ color: 'hsl(var(--muted-foreground))' }}>
-            Join YTVerse today
+            Join Voxora today
           </p>
         </div>
 
@@ -231,7 +245,7 @@ export default function RegisterPage() {
             >
               {showPassword
                 ? <EyeOff className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
-                : <Eye    className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
+                : <Eye className="w-4 h-4" style={{ color: 'hsl(var(--muted-foreground))' }} />
               }
             </button>
           </Field>

@@ -29,7 +29,6 @@ export default function Providers({ children }) {
             {children}
           </ToastProvider>
         </BrowserRouter>
-        <ReactQueryDevtools initialIsOpen={false} />
       </QueryClientProvider>
     </Provider>
   )

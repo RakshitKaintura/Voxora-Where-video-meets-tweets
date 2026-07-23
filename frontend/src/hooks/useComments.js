@@ -21,13 +21,33 @@ export function useVideoComments(videoId) {
   })
 }
 
+export function useCommentReplies(commentId) {
+  return useInfiniteQuery({
+    queryKey: [...COMMENT_KEYS.all, 'replies', commentId],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await commentApi.getCommentReplies(commentId, { page: pageParam, limit: 10 })
+      return res.data.data
+    },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.hasNextPage) return undefined
+      return lastPage.nextPage
+    },
+    enabled: !!commentId,
+  })
+}
+
 export function useAddComment() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ videoId, content }) => commentApi.addComment(videoId, content),
+    mutationFn: ({ videoId, content, parentComment }) => commentApi.addComment(videoId, content, parentComment),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.video(variables.videoId) })
+      if (variables.parentComment) {
+        queryClient.invalidateQueries({ queryKey: [...COMMENT_KEYS.all, 'replies', variables.parentComment] })
+      }
+      if (variables.videoId) {
+        queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.video(variables.videoId) })
+      }
     },
   })
 }

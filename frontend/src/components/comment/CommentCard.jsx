@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { MoreVertical, ThumbsUp, Trash2, Edit2 } from 'lucide-react'
+import { MoreVertical, ThumbsUp, Trash2, Edit2, MessageCircle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/shared/Avatar'
 import { formatCount, timeAgo } from '@/lib/utils'
-import { useDeleteComment, useUpdateComment } from '@/hooks/useComments'
+import { useDeleteComment, useUpdateComment, useAddComment, useCommentReplies } from '@/hooks/useComments'
 import { useToggleCommentLike } from '@/hooks/useLike'
 import CommentInput from './CommentInput'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 
-export default function CommentCard({ comment }) {
+export default function CommentCard({ comment, isReply = false }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [isReplying, setIsReplying] = useState(false)
+  const [showReplies, setShowReplies] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -21,6 +23,18 @@ export default function CommentCard({ comment }) {
   const { mutate: deleteComment, isLoading: isDeleting } = useDeleteComment()
   const { mutate: updateComment, isLoading: isUpdating } = useUpdateComment()
   const { mutate: toggleLike } = useToggleCommentLike()
+  const { mutate: addReply, isLoading: isAddingReply } = useAddComment()
+
+  // Fetch replies
+  const { 
+    data: repliesData, 
+    isLoading: isRepliesLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage
+  } = useCommentReplies(showReplies ? comment._id : null)
+
+  const replies = repliesData?.pages?.flatMap(page => page.comments) || []
 
   if (!comment) return null
 
@@ -31,6 +45,19 @@ export default function CommentCard({ comment }) {
         onSuccess: () => {
           setIsEditing(false)
           resetForm()
+        },
+      }
+    )
+  }
+
+  const handleReplySubmit = (content, resetForm) => {
+    addReply(
+      { videoId: comment.video, content, parentComment: comment._id },
+      {
+        onSuccess: () => {
+          setIsReplying(false)
+          setShowReplies(true)
+          if (resetForm) resetForm()
         },
       }
     )
@@ -91,6 +118,63 @@ export default function CommentCard({ comment }) {
               <ThumbsUp className={`w-4 h-4 ${comment.isLiked ? 'fill-current' : ''}`} />
               <span className="text-xs">{formatCount(comment.likesCount)}</span>
             </button>
+            {!isReply && (
+              <button
+                onClick={() => setIsReplying(!isReplying)}
+                className="flex items-center gap-1.5 p-1.5 rounded-full text-[hsl(var(--muted-foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">Reply</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {isReplying && !isEditing && (
+          <div className="mt-3 w-full">
+            <CommentInput 
+              onSubmit={handleReplySubmit} 
+              isLoading={isAddingReply}
+              onCancel={() => setIsReplying(false)}
+              autoFocus
+            />
+          </div>
+        )}
+
+        {/* View Replies Toggle */}
+        {comment.repliesCount > 0 && !isReply && (
+          <div className="mt-1">
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-[hsl(var(--blue))] hover:bg-[hsl(var(--blue))/10] rounded-full transition-colors"
+            >
+              {showReplies ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {comment.repliesCount} {comment.repliesCount === 1 ? 'reply' : 'replies'}
+            </button>
+          </div>
+        )}
+
+        {/* Replies List */}
+        {showReplies && !isReply && (
+          <div className="mt-3 flex flex-col gap-4">
+            {isRepliesLoading ? (
+              <div className="flex justify-center py-2">
+                <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              </div>
+            ) : (
+              replies.map(reply => (
+                <CommentCard key={reply._id} comment={reply} isReply={true} />
+              ))
+            )}
+            {hasNextPage && (
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="text-sm font-medium text-[hsl(var(--blue))] hover:underline self-start"
+              >
+                {isFetchingNextPage ? 'Loading...' : 'Show more replies'}
+              </button>
+            )}
           </div>
         )}
       </div>

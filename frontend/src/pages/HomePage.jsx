@@ -1,4 +1,4 @@
-import { useEffect, useRef, useCallback } from 'react'
+import { useEffect, useRef, useCallback, useMemo } from 'react'
 import { useVideos } from '@/hooks/useVideos'
 import VideoGrid from '@/components/shared/VideoGrid'
 import EmptyState from '@/components/shared/EmptyState'
@@ -15,10 +15,15 @@ export default function HomePage() {
     hasNextPage,
     isFetchingNextPage,
     refetch,
-  } = useVideos()
+  } = useVideos({ limit: 20 })
 
   // Flatten all pages of videos into a single array
-  const videos = data?.pages?.flatMap((page) => page.videos) || []
+  const rawVideos = data?.pages?.flatMap((page) => page.videos) || []
+  
+  // Shuffle the videos so they appear randomized as requested before
+  const videos = useMemo(() => {
+    return [...rawVideos].sort(() => Math.random() - 0.5)
+  }, [rawVideos])
 
   // ─── Infinite Scroll Observer ─────────────────────────────────────────────────
   const observer = useRef()

@@ -38,13 +38,36 @@ export function useUserTweets(userId) {
   })
 }
 
+export function useTweetReplies(tweetId) {
+  return useInfiniteQuery({
+    queryKey: [...TWEET_KEYS.all, 'replies', tweetId],
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await tweetApi.getTweetReplies(tweetId, { page: pageParam, limit: 10 })
+      return res.data.data
+    },
+    getNextPageParam: (lastPage) => {
+      if (!lastPage || !lastPage.hasNextPage) return undefined
+      return lastPage.nextPage
+    },
+    enabled: !!tweetId,
+  })
+}
+
 // ─── Mutations ────────────────────────────────────────────────────────────────
 export function useCreateTweet() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (content) => tweetApi.createTweet(content),
-    onSuccess: () => {
+    mutationFn: (data) => tweetApi.createTweet(data),
+    onSuccess: (_, variables) => {
+      if (variables instanceof FormData) {
+          const parentTweet = variables.get('parentTweet');
+          if (parentTweet) {
+            queryClient.invalidateQueries({ queryKey: [...TWEET_KEYS.all, 'replies', parentTweet] })
+          }
+      } else if (variables.parentTweet) {
+        queryClient.invalidateQueries({ queryKey: [...TWEET_KEYS.all, 'replies', variables.parentTweet] })
+      }
       queryClient.invalidateQueries({ queryKey: TWEET_KEYS.feed() })
     },
   })
@@ -66,7 +89,7 @@ export function useUpdateTweet() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: ({ tweetId, content }) => tweetApi.updateTweet(tweetId, content),
+    mutationFn: ({ tweetId, data }) => tweetApi.updateTweet(tweetId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: TWEET_KEYS.all })
     },

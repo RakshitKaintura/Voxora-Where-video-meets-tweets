@@ -51,14 +51,9 @@ function CompactVideoCard({ video }) {
 }
 
 export default function RecommendedVideos({ currentVideo }) {
-  // Extract a pseudo-tag from the current video title (e.g. first word > 3 chars, or just the first word)
-  const query = useMemo(() => {
-    if (!currentVideo?.title) return ''
-    const words = currentVideo.title.split(' ').filter(w => w.length > 3)
-    return words.length > 0 ? words[0] : currentVideo.title.split(' ')[0]
-  }, [currentVideo])
-
-  const { data, isLoading, isError } = useVideos({ query })
+  // Get the owner ID of the current video to recommend other videos from the same channel
+  const userId = currentVideo?.owner?._id || currentVideo?.owner
+  const { data, isLoading, isError } = useVideos(userId ? { userId } : { query: '' })
 
   // Flatten and filter out the current video
   const recommendations = useMemo(() => {

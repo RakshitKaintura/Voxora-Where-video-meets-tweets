@@ -64,9 +64,13 @@ const getAllVideos = asyncHandler(async (req, res) => {
         }
     });
 
-    // 5. Sort
-    const sortDirection = sortType === "asc" ? 1 : -1;
-    pipeline.push({ $sort: { [sortBy]: sortDirection } });
+    // 5. Sort or Randomize
+    if (sortBy === "random") {
+        pipeline.push({ $sample: { size: parseInt(limit, 10) } });
+    } else {
+        const sortDirection = sortType === "asc" ? 1 : -1;
+        pipeline.push({ $sort: { [sortBy]: sortDirection } });
+    }
 
     // 6. Paginate
     const aggregate = Video.aggregate(pipeline);

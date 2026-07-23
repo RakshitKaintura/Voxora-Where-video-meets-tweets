@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Plus, Loader2 } from 'lucide-react'
+import { X, Plus, Loader2, Lock, Globe } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import {
   useUserPlaylists,
@@ -13,6 +13,7 @@ export default function PlaylistModal({ videoId, isOpen, onClose }) {
   const [showCreate, setShowCreate] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [type, setType] = useState('personal')
 
   const { data: playlists, isLoading } = useUserPlaylists(user?._id)
   
@@ -35,7 +36,7 @@ export default function PlaylistModal({ videoId, isOpen, onClose }) {
     if (!name.trim() || !description.trim()) return
 
     createPlaylist(
-      { name, description },
+      { name, description, type },
       {
         onSuccess: (res) => {
           // Immediately add the video to the newly created playlist
@@ -44,6 +45,7 @@ export default function PlaylistModal({ videoId, isOpen, onClose }) {
           setShowCreate(false)
           setName('')
           setDescription('')
+          setType('personal')
         },
       }
     )
@@ -108,39 +110,84 @@ export default function PlaylistModal({ videoId, isOpen, onClose }) {
               Create new playlist
             </button>
           ) : (
-            <form onSubmit={handleCreate} className="flex flex-col gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                maxLength={50}
-                required
-                className="w-full bg-transparent border-b border-[hsl(var(--border))] focus:border-[hsl(var(--foreground))] pb-1 text-sm text-[hsl(var(--foreground))] outline-none transition-colors"
-              />
-              <input
-                type="text"
-                placeholder="Description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                maxLength={150}
-                required
-                className="w-full bg-transparent border-b border-[hsl(var(--border))] focus:border-[hsl(var(--foreground))] pb-1 text-sm text-[hsl(var(--foreground))] outline-none transition-colors"
-              />
-              <div className="flex items-center justify-end gap-2 mt-2">
+            <form onSubmit={handleCreate} className="flex flex-col gap-4 animate-in fade-in slide-in-from-bottom-2">
+              <div className="flex flex-col gap-3">
+                <input
+                  type="text"
+                  placeholder="Playlist Name"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  maxLength={50}
+                  required
+                  className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] focus:border-[hsl(var(--foreground))] rounded-lg px-3 py-2 text-sm text-[hsl(var(--foreground))] outline-none transition-all placeholder:text-[hsl(var(--muted-foreground))]"
+                />
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  maxLength={150}
+                  required
+                  className="w-full bg-[hsl(var(--background))] border border-[hsl(var(--border))] focus:border-[hsl(var(--foreground))] rounded-lg px-3 py-2 text-sm text-[hsl(var(--foreground))] outline-none transition-all placeholder:text-[hsl(var(--muted-foreground))]"
+                />
+              </div>
+
+              <div className="flex flex-col gap-2">
+                <span className="text-xs font-medium text-[hsl(var(--muted-foreground))] uppercase tracking-wider">Privacy</span>
+                <div className="flex bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-lg p-1 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setType('personal')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      type === 'personal'
+                        ? 'bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-sm'
+                        : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]'
+                    }`}
+                  >
+                    <Lock className="w-3.5 h-3.5" />
+                    Personal
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setType('creator')}
+                    className={`flex-1 flex items-center justify-center gap-2 py-1.5 rounded-md text-xs font-semibold transition-all ${
+                      type === 'creator'
+                        ? 'bg-[hsl(var(--foreground))] text-[hsl(var(--background))] shadow-sm'
+                        : 'text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))]'
+                    }`}
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    Public
+                  </button>
+                </div>
+                <p className="text-[10px] text-[hsl(var(--muted-foreground))] leading-tight">
+                  {type === 'personal'
+                    ? 'Only you can see this playlist.'
+                    : 'Visible on your channel for everyone.'}
+                </p>
+              </div>
+
+              <div className="flex items-center justify-end gap-3 mt-2">
                 <button
                   type="button"
                   onClick={() => setShowCreate(false)}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold text-[hsl(var(--foreground))] hover:bg-[hsl(var(--border))] transition-colors"
+                  className="px-4 py-2 rounded-full text-sm font-medium text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isCreating || !name.trim() || !description.trim()}
-                  className="px-3 py-1.5 rounded-full text-xs font-semibold bg-[hsl(var(--red))] text-white hover:bg-[hsl(var(--red))/90] transition-colors disabled:opacity-50"
+                  className="px-4 py-2 rounded-full text-sm font-semibold bg-[hsl(var(--red))] text-white hover:bg-[hsl(var(--red))/90] transition-colors disabled:opacity-50 flex items-center gap-2"
                 >
-                  {isCreating ? 'Creating...' : 'Create'}
+                  {isCreating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    'Create'
+                  )}
                 </button>
               </div>
             </form>

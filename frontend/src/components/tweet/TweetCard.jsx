@@ -1,16 +1,18 @@
 import { useState } from 'react'
-import { MoreVertical, ThumbsUp, Trash2, Edit2 } from 'lucide-react'
+import { MoreVertical, ThumbsUp, Trash2, Edit2, MessageCircle, ChevronDown, ChevronUp, Loader2 } from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 import Avatar from '@/components/shared/Avatar'
 import { formatCount, timeAgo } from '@/lib/utils'
-import { useDeleteTweet, useUpdateTweet } from '@/hooks/useTweets'
+import { useDeleteTweet, useUpdateTweet, useCreateTweet, useTweetReplies } from '@/hooks/useTweets'
 import { useToggleTweetLike } from '@/hooks/useLike'
 import ConfirmDialog from '@/components/shared/ConfirmDialog'
 import TweetComposer from './TweetComposer'
 
-export default function TweetCard({ tweet }) {
+export default function TweetCard({ tweet, isReply = false }) {
   const [isEditing, setIsEditing] = useState(false)
+  const [isReplying, setIsReplying] = useState(false)
+  const [showReplies, setShowReplies] = useState(false)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
 
@@ -21,19 +23,58 @@ export default function TweetCard({ tweet }) {
   const { mutate: deleteTweet, isLoading: isDeleting } = useDeleteTweet()
   const { mutate: updateTweet, isLoading: isUpdating } = useUpdateTweet()
   const { mutate: toggleLike } = useToggleTweetLike()
+  const { mutate: addReply, isLoading: isAddingReply } = useCreateTweet()
+
+  // Fetch replies
+  const { 
+    data: repliesData, 
+    isLoading: isRepliesLoading,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage
+  } = useTweetReplies(showReplies ? tweet._id : null)
+
+  const replies = repliesData?.pages?.flatMap(page => page.tweets) || []
 
   if (!tweet) return null
 
-  const handleUpdate = (content, resetForm) => {
+  const handleEditSubmit = (data) => {
+    let submitData = { content: data.content }
+    if (data.image !== undefined) {
+      if (data.image) {
+        submitData = new FormData()
+        submitData.append('content', data.content)
+        submitData.append('image', data.image)
+      } else {
+        // If image is explicitly set to null, we send a string 'null' to remove it
+        submitData.image = 'null'
+      }
+    }
+
     updateTweet(
-      { tweetId: tweet._id, content },
+      { tweetId: tweet._id, data: submitData },
       {
-        onSuccess: () => {
-          setIsEditing(false)
-          if (resetForm) resetForm()
-        },
+        onSuccess: () => setIsEditing(false),
       }
     )
+  }
+
+  const handleReplySubmit = (data, resetForm) => {
+    let submitData = { content: data.content, parentTweet: tweet._id }
+    if (data.image) {
+      submitData = new FormData()
+      submitData.append('content', data.content)
+      submitData.append('parentTweet', tweet._id)
+      submitData.append('image', data.image)
+    }
+
+    addReply(submitData, {
+      onSuccess: () => {
+        setIsReplying(false)
+        setShowReplies(true)
+        if (resetForm) resetForm()
+      },
+    })
   }
 
   const handleDelete = () => {
@@ -73,7 +114,8 @@ export default function TweetCard({ tweet }) {
           <div className="mt-2">
             <TweetComposer
               initialValue={tweet.content}
-              onSubmit={handleUpdate}
+              initialImage={tweet.image}
+              onSubmit={handleEditSubmit}
               isLoading={isUpdating}
               onCancel={() => setIsEditing(false)}
               autoFocus
@@ -83,6 +125,12 @@ export default function TweetCard({ tweet }) {
           <p className="text-sm text-[hsl(var(--foreground))] whitespace-pre-wrap leading-relaxed">
             {tweet.content}
           </p>
+        )}
+
+        {tweet.image && !isEditing && (
+          <div className="mt-3 rounded-2xl overflow-hidden border border-[hsl(var(--border))]">
+            <img src={tweet.image} alt="Tweet image" className="w-full max-h-96 object-cover bg-black/10" />
+          </div>
         )}
 
         {/* Footer actions */}
@@ -97,6 +145,63 @@ export default function TweetCard({ tweet }) {
               <ThumbsUp className={`w-4 h-4 ${tweet.isLiked ? 'fill-current' : ''}`} />
               <span className="text-xs">{formatCount(tweet.likesCount)}</span>
             </button>
+            {!isReply && (
+              <button
+                onClick={() => setIsReplying(!isReplying)}
+                className="flex items-center gap-2 p-1.5 rounded-full text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted-foreground))/10] transition-colors"
+              >
+                <MessageCircle className="w-4 h-4" />
+                <span className="text-xs font-medium">Reply</span>
+              </button>
+            )}
+          </div>
+        )}
+
+        {isReplying && !isEditing && (
+          <div className="mt-3 w-full">
+            <TweetComposer 
+              onSubmit={handleReplySubmit} 
+              isLoading={isAddingReply}
+              onCancel={() => setIsReplying(false)}
+              autoFocus
+            />
+          </div>
+        )}
+
+        {/* View Replies Toggle */}
+        {tweet.repliesCount > 0 && !isReply && (
+          <div className="mt-1">
+            <button
+              onClick={() => setShowReplies(!showReplies)}
+              className="flex items-center gap-2 px-3 py-1.5 text-sm font-semibold text-[hsl(var(--blue))] hover:bg-[hsl(var(--blue))/10] rounded-full transition-colors"
+            >
+              {showReplies ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {tweet.repliesCount} {tweet.repliesCount === 1 ? 'reply' : 'replies'}
+            </button>
+          </div>
+        )}
+
+        {/* Replies List */}
+        {showReplies && !isReply && (
+          <div className="mt-3 flex flex-col gap-4">
+            {isRepliesLoading ? (
+              <div className="flex justify-center py-2">
+                <Loader2 className="w-5 h-5 animate-spin text-[hsl(var(--muted-foreground))]" />
+              </div>
+            ) : (
+              replies.map(reply => (
+                <TweetCard key={reply._id} tweet={reply} isReply={true} />
+              ))
+            )}
+            {hasNextPage && (
+              <button
+                onClick={() => fetchNextPage()}
+                disabled={isFetchingNextPage}
+                className="text-sm font-medium text-[hsl(var(--blue))] hover:underline self-start"
+              >
+                {isFetchingNextPage ? 'Loading...' : 'Show more replies'}
+              </button>
+            )}
           </div>
         )}
       </div>

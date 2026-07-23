@@ -3,8 +3,11 @@ import api from './axios'
 export const getVideoComments = (videoId, params) =>
   api.get(`/comments/${videoId}`, { params })
 
-export const addComment = (videoId, content) =>
-  api.post(`/comments/${videoId}`, { content })
+export const getCommentReplies = (commentId, params) =>
+  api.get(`/comments/c/${commentId}/replies`, { params })
+
+export const addComment = (videoId, content, parentComment = null) =>
+  api.post(`/comments/${videoId}`, { content, parentComment })
 
 export const updateComment = (commentId, content) =>
   api.patch(`/comments/c/${commentId}`, { content })

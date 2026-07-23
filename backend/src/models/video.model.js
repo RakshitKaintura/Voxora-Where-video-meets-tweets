@@ -23,6 +23,14 @@ const videoSchema=new Schema(
             type:Number,
             required:true
         },
+        captions:{
+            type:String, // Will store the raw WebVTT subtitle data
+            default:""
+        },
+        summary:{
+            type:String, // Will store the AI generated 3-bullet-point summary
+            default:""
+        },
         views:{
             type:Number,
             default:0

@@ -39,7 +39,7 @@ export default function WatchPage() {
       
       {/* Top Section: Full Width Video & Description */}
       <div className="w-full flex flex-col">
-        <VideoPlayer src={video.videoFile} poster={video.thumbnail} />
+        <VideoPlayer src={video.videoFile} poster={video.thumbnail} captions={video.captions} />
         <VideoDescription video={video} />
       </div>
 

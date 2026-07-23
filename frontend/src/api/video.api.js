@@ -41,3 +41,8 @@ export const deleteVideo = (videoId) =>
  */
 export const togglePublishStatus = (videoId) =>
   api.patch(`/videos/toggle/publish/${videoId}`)
+
+export const getVideoSummary = async (videoId) => {
+    const response = await api.get(`/videos/${videoId}/summary`);
+    return response.data;
+};

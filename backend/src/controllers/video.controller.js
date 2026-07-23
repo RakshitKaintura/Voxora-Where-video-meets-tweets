@@ -5,7 +5,8 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
-
+import {generateVideoTranscription, generateTextSummary} from "../utils/gemini.js"
+import fs from "fs"
 
 const getAllVideos = asyncHandler(async (req, res) => {
     const { page = 1, limit = 10, query, sortBy = "createdAt", sortType = "desc", userId } = req.query
@@ -104,13 +105,24 @@ const publishAVideo = asyncHandler(async (req, res) => {
         throw new ApiError(400,"All fields are required");
     }
 
-    const video=await uploadOnCloudinary(videoLocalPath);
+    // Create a copy of the video file for Gemini because Cloudinary upload deletes the original file
+    const geminiVideoPath = videoLocalPath + "_gemini.mp4";
+    fs.copyFileSync(videoLocalPath, geminiVideoPath);
+
+    // Run Cloudinary upload and Gemini transcription in parallel
+    const [video, thumbnail, captions] = await Promise.all([
+        uploadOnCloudinary(videoLocalPath),
+        uploadOnCloudinary(thumbnailLocalPath),
+        generateVideoTranscription(geminiVideoPath).finally(() => {
+            if (fs.existsSync(geminiVideoPath)) {
+                fs.unlinkSync(geminiVideoPath);
+            }
+        })
+    ]);
 
     if(!video){
         throw new ApiError(500,"There was an error uploading the video");
     }
-
-    const thumbnail= await uploadOnCloudinary(thumbnailLocalPath);
     if(!thumbnail){
         throw new ApiError(500,"There was an error uploading the thumbnail");
     }
@@ -122,6 +134,7 @@ const publishAVideo = asyncHandler(async (req, res) => {
             title,
             description,
             duration:video.duration,
+            captions, // Save the generated VTT string
             owner:req.user._id
         }
     );
@@ -324,11 +337,49 @@ const togglePublishStatus = asyncHandler(async (req, res) => {
     );
 })
 
+const getVideoSummary = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID");
+    }
+
+    const video = await Video.findById(videoId);
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    // Return cached summary if it exists
+    if (video.summary) {
+        return res.status(200).json(new ApiResponse(200, { summary: video.summary }, "Video summary retrieved successfully"));
+    }
+
+    // Try to summarize captions first, fallback to description
+    const textToSummarize = video.captions || video.description;
+    
+    if (!textToSummarize) {
+        throw new ApiError(400, "Not enough content to summarize (no captions or description available)");
+    }
+
+    const summary = await generateTextSummary(textToSummarize);
+    
+    if (!summary) {
+        throw new ApiError(500, "Failed to generate summary");
+    }
+
+    // Cache it
+    video.summary = summary;
+    await video.save({ validateBeforeSave: false });
+
+    return res.status(200).json(new ApiResponse(200, { summary }, "Video summary generated successfully"));
+});
+
 export {
     getAllVideos,
     publishAVideo,
     getVideoById,
     updateVideo,
     deleteVideo,
-    togglePublishStatus
+    togglePublishStatus,
+    getVideoSummary
 }

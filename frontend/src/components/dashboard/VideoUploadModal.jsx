@@ -1,7 +1,8 @@
 import { useState, useRef } from 'react'
-import { X, UploadCloud, Image as ImageIcon, Video as VideoIcon, Loader2 } from 'lucide-react'
+import { X, UploadCloud, Image as ImageIcon, Video as VideoIcon, Loader2, Sparkles } from 'lucide-react'
 import { useUploadVideo } from '@/hooks/useVideos'
 import { useToast } from '@/components/shared/Toast'
+import { generateVideoMetadata } from '@/api/video.api'
 
 export default function VideoUploadModal({ isOpen, onClose }) {
   const toast = useToast()
@@ -10,6 +11,8 @@ export default function VideoUploadModal({ isOpen, onClose }) {
   const [description, setDescription] = useState('')
   const [videoFile, setVideoFile] = useState(null)
   const [thumbnailFile, setThumbnailFile] = useState(null)
+  
+  const [isAutoFilling, setIsAutoFilling] = useState(false)
 
   const videoInputRef = useRef(null)
   const thumbnailInputRef = useRef(null)
@@ -33,6 +36,23 @@ export default function VideoUploadModal({ isOpen, onClose }) {
       setThumbnailFile(file)
     } else {
       toast.error('Invalid file', 'Please select a valid image file.')
+    }
+  }
+
+  const handleAutoFill = async () => {
+    if (!videoFile) return;
+    setIsAutoFilling(true);
+    
+    try {
+      const data = await generateVideoMetadata(videoFile);
+      if (data.data?.title) setTitle(data.data.title);
+      if (data.data?.description) setDescription(data.data.description);
+      toast.success('Auto-Fill Complete', 'AI has generated a title and description based on your video!');
+    } catch (err) {
+      toast.error('Auto-Fill Failed', 'Failed to generate metadata. Please try again.');
+      console.error(err);
+    } finally {
+      setIsAutoFilling(false);
     }
   }
 
@@ -98,9 +118,22 @@ export default function VideoUploadModal({ isOpen, onClose }) {
             
             {/* Title */}
             <div className="flex flex-col gap-2">
-              <label htmlFor="title" className="text-sm font-semibold text-[hsl(var(--foreground))]">
-                Title <span className="text-[hsl(var(--red))]">*</span>
-              </label>
+              <div className="flex items-center justify-between">
+                <label htmlFor="title" className="text-sm font-semibold text-[hsl(var(--foreground))]">
+                  Title <span className="text-[hsl(var(--red))]">*</span>
+                </label>
+                <button
+                  type="button"
+                  onClick={handleAutoFill}
+                  disabled={!videoFile || isAutoFilling || isLoading}
+                  className="flex items-center gap-2 px-4 py-1.5 bg-[hsl(var(--red))] hover:bg-[hsl(var(--red))]/90 text-white rounded-full text-xs font-bold transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+                >
+                  {isAutoFilling && (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  )}
+                  <span>{isAutoFilling ? 'Generating...' : 'Auto-Fill with AI'}</span>
+                </button>
+              </div>
               <input
                 id="title"
                 type="text"

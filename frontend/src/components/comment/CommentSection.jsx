@@ -1,8 +1,8 @@
 import { useRef, useCallback } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
-import { Loader2 } from 'lucide-react'
-import { useVideoComments, useAddComment } from '@/hooks/useComments'
+import { Loader2, Sparkles } from 'lucide-react'
+import { useVideoComments, useAddComment, useCommentSentiment } from '@/hooks/useComments'
 import CommentInput from './CommentInput'
 import CommentCard from './CommentCard'
 
@@ -20,10 +20,11 @@ export default function CommentSection({ videoId }) {
   } = useVideoComments(videoId)
   
   const { mutate: addComment, isLoading: isAdding } = useAddComment()
+  const { data: sentimentData, isLoading: isSentimentLoading, isFetching: isSentimentFetching, refetch: fetchSentiment, isSuccess: isSentimentSuccess } = useCommentSentiment(videoId)
 
   // Flatten comments
   const comments = data?.pages?.flatMap((page) => page.comments) || []
-  const totalComments = data?.pages?.[0]?.totalDocs || 0
+  const totalComments = data?.pages?.[0]?.totalComments || 0
 
   // Infinite Scroll Observer
   const observer = useRef()
@@ -52,12 +53,51 @@ export default function CommentSection({ videoId }) {
     )
   }
 
+  const isAnalyzing = isSentimentLoading || isSentimentFetching;
+
   return (
     <div className="flex flex-col gap-6 mt-8">
       {/* Header */}
-      <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
-        {totalComments} Comments
-      </h3>
+      <div className="flex items-center justify-between">
+        <h3 className="text-xl font-bold text-[hsl(var(--foreground))]">
+          {totalComments} Comments
+        </h3>
+        
+        {totalComments >= 3 && !isSentimentSuccess && (
+          <button
+            onClick={() => fetchSentiment()}
+            disabled={isAnalyzing}
+            className="flex items-center gap-2 px-4 py-1.5 bg-[hsl(var(--red))] hover:bg-[hsl(var(--red))]/90 text-white rounded-full text-xs font-bold transition-all shadow-sm hover:shadow-md active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+          >
+            {isAnalyzing && (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            )}
+            <span>{isAnalyzing ? 'Analyzing...' : 'AI Insight'}</span>
+          </button>
+        )}
+      </div>
+
+      {/* AI Sentiment Badge */}
+      {isSentimentSuccess && (
+        <div className="flex items-start gap-3 p-4 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl relative overflow-hidden">
+          <div className="absolute top-0 left-0 w-1 h-full bg-[hsl(var(--red))]" />
+          <div className="shrink-0 p-2 bg-[hsl(var(--muted))] rounded-full">
+            <Sparkles className="w-4 h-4 text-[hsl(var(--red))]" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <span className="text-xs font-bold text-[hsl(var(--foreground))] uppercase tracking-wider">
+              AI Insight
+            </span>
+            <p className="text-sm text-[hsl(var(--foreground))] leading-relaxed">
+              {sentimentData?.insight ? (
+                sentimentData.insight
+              ) : (
+                <span className="text-[hsl(var(--muted-foreground))]">Not enough data to analyze sentiment.</span>
+              )}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Add Comment Input */}
       {user ? (

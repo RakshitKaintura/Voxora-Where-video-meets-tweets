@@ -116,18 +116,16 @@ export default function VideoDescription({ video }) {
           <button
             onClick={handleGenerateSummary}
             disabled={isGeneratingSummary || summary}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed ${
               summary 
-                ? 'bg-purple-500/20 text-purple-400 cursor-default' 
-                : 'bg-[hsl(var(--foreground))] text-[hsl(var(--background))] hover:bg-purple-500 hover:text-white'
+                ? 'bg-[hsl(var(--background))] border border-[hsl(var(--border))] text-[hsl(var(--foreground))] cursor-default' 
+                : 'bg-[hsl(var(--red))] hover:bg-[hsl(var(--red))]/90 text-white hover:shadow-md active:scale-95'
             }`}
           >
-            {isGeneratingSummary ? (
+            {isGeneratingSummary && (
               <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Sparkles className="w-4 h-4" />
             )}
-            <span>{summary ? 'AI Summary Generated' : '✨ AI Summary'}</span>
+            <span>{isGeneratingSummary ? 'Generating...' : summary ? 'AI Summary Generated' : 'AI Summary'}</span>
           </button>
         </div>
 
@@ -138,16 +136,16 @@ export default function VideoDescription({ video }) {
         )}
 
         {summary && (
-          <div className="mb-4 p-4 bg-purple-500/10 border border-purple-500/20 rounded-xl">
-            <h3 className="text-purple-400 font-bold text-sm mb-2 flex items-center gap-2">
-              <Sparkles className="w-4 h-4" /> AI Summary
+          <div className="mb-4 p-4 bg-[hsl(var(--background))] border border-[hsl(var(--border))] rounded-xl">
+            <h3 className="text-[hsl(var(--foreground))] font-bold text-sm mb-2 flex items-center gap-2">
+              AI Summary
             </h3>
             <ul className="space-y-2">
               {summary.split('\n').map((point, idx) => {
                 const cleanPoint = point.replace(/^-\s*/, '');
                 return cleanPoint ? (
                   <li key={idx} className="text-sm text-[hsl(var(--foreground))] flex items-start gap-2">
-                    <span className="text-purple-500 mt-1">•</span>
+                    <span className="text-[hsl(var(--red))] mt-1">•</span>
                     <span>{cleanPoint}</span>
                   </li>
                 ) : null;

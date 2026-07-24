@@ -1,4 +1,4 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
 import * as commentApi from '@/api/comment.api'
 
 export const COMMENT_KEYS = {
@@ -71,5 +71,16 @@ export function useUpdateComment() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: COMMENT_KEYS.video(variables.videoId) })
     },
+  })
+}
+export function useCommentSentiment(videoId) {
+  return useQuery({
+    queryKey: [...COMMENT_KEYS.video(videoId), 'sentiment'],
+    queryFn: async () => {
+      const res = await commentApi.getCommentSentiment(videoId);
+      return res.data;
+    },
+    enabled: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes cache to prevent hitting AI too often
   })
 }

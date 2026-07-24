@@ -46,3 +46,12 @@ export const getVideoSummary = async (videoId) => {
     const response = await api.get(`/videos/${videoId}/summary`);
     return response.data;
 };
+
+export const generateVideoMetadata = async (file) => {
+    const formData = new FormData();
+    formData.append("videoFile", file);
+    const response = await api.post('/videos/generate-metadata', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return response.data;
+};

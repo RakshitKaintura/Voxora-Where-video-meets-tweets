@@ -14,3 +14,8 @@ export const updateComment = (commentId, content) =>
 
 export const deleteComment = (commentId) =>
   api.delete(`/comments/c/${commentId}`)
+
+export const getCommentSentiment = async (videoId) => {
+  const response = await api.get(`/comments/${videoId}/sentiment`)
+  return response.data
+}

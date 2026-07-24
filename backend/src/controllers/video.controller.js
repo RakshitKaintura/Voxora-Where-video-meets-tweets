@@ -5,7 +5,7 @@ import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
 import {uploadOnCloudinary} from "../utils/cloudinary.js"
-import {generateVideoTranscription, generateTextSummary} from "../utils/gemini.js"
+import {generateVideoTranscription, generateTextSummary, generateVideoMetadata} from "../utils/gemini.js"
 import fs from "fs"
 
 const getAllVideos = asyncHandler(async (req, res) => {
@@ -374,6 +374,35 @@ const getVideoSummary = asyncHandler(async (req, res) => {
     return res.status(200).json(new ApiResponse(200, { summary }, "Video summary generated successfully"));
 });
 
+const generateVideoMetadataController = asyncHandler(async (req, res) => {
+    let videoLocalPath;
+    if (req.file && req.file.path) {
+        videoLocalPath = req.file.path;
+    }
+
+    if (!videoLocalPath) {
+        throw new ApiError(400, "Video file is required");
+    }
+
+    // Call Gemini utility to generate metadata
+    const metadata = await generateVideoMetadata(videoLocalPath);
+
+    // Delete the local file after processing
+    try {
+        fs.unlinkSync(videoLocalPath);
+    } catch (err) {
+        console.error("Failed to delete local video file in generateVideoMetadataController:", err);
+    }
+
+    if (!metadata || !metadata.title) {
+        throw new ApiError(500, "Failed to generate video metadata from AI");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, metadata, "Video metadata generated successfully")
+    );
+});
+
 export {
     getAllVideos,
     publishAVideo,
@@ -381,5 +410,6 @@ export {
     updateVideo,
     deleteVideo,
     togglePublishStatus,
-    getVideoSummary
+    getVideoSummary,
+    generateVideoMetadataController
 }

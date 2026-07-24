@@ -6,13 +6,19 @@ import {
     publishAVideo,
     togglePublishStatus,
     updateVideo,
-    getVideoSummary
+    getVideoSummary,
+    generateVideoMetadataController
 } from "../controllers/video.controller.js"
 import {verifyJWT} from "../middlewares/auth.middleware.js"
 import {upload} from "../middlewares/multer.middleware.js"
 
 const router = Router();
 router.use(verifyJWT); // Apply verifyJWT middleware to all routes in this file
+
+router.route("/generate-metadata").post(
+    upload.single("videoFile"),
+    generateVideoMetadataController
+);
 
 router
     .route("/")

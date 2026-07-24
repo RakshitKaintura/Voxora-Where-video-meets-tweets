@@ -120,3 +120,117 @@ export const generateTextSummary = async (text) => {
         return ""; // Return empty string on failure
     }
 };
+
+/**
+ * Uploads a video to Gemini and generates a click-worthy title and SEO description.
+ * @param {string} localFilePath - Path to the local video file
+ * @returns {Promise<{title: string, description: string}>} The generated metadata
+ */
+export const generateVideoMetadata = async (localFilePath) => {
+    try {
+        if (!ai) {
+            ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        }
+        console.log(`[Gemini] Starting metadata generation for ${localFilePath}`);
+        
+        let file = await ai.files.upload({ 
+            file: localFilePath,
+            mimeType: 'video/mp4' 
+        });
+        
+        console.log(`[Gemini] Uploaded file as: ${file.name}`);
+
+        let fileState = await ai.files.get({ name: file.name });
+        while (fileState.state === 'PROCESSING') {
+            console.log(`[Gemini] Waiting for video processing...`);
+            await new Promise((resolve) => setTimeout(resolve, 5000));
+            fileState = await ai.files.get({ name: file.name });
+        }
+
+        if (fileState.state === 'FAILED') {
+            throw new Error('Video processing failed on Gemini servers.');
+        }
+
+        console.log(`[Gemini] Video processing complete. Generating metadata...`);
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        {
+                            fileData: {
+                                fileUri: file.uri,
+                                mimeType: file.mimeType
+                            }
+                        },
+                        { 
+                            text: 'You are an expert YouTube strategist. Analyze this video and generate a highly engaging, click-worthy title (max 60 characters) and a detailed, SEO-optimized description with hashtags. Return ONLY a valid JSON object with exactly two string keys: "title" and "description". Do not include any markdown formatting or code blocks. Just the raw JSON object.'
+                        }
+                    ]
+                }
+            ],
+            config: {
+                temperature: 0.7,
+            }
+        });
+
+        await ai.files.delete({ name: file.name }).catch(e => console.error(`Failed to delete file ${file.name}:`, e));
+
+        let responseText = response.text || "{}";
+        responseText = responseText.replace(/```json/gi, '').replace(/```/gi, '').trim();
+        
+        try {
+            return JSON.parse(responseText);
+        } catch (e) {
+            console.error("Failed to parse Gemini JSON:", responseText);
+            return { title: "", description: "" };
+        }
+        
+    } catch (error) {
+        console.error("Gemini Metadata Error:", error);
+        return { title: "", description: "" };
+    }
+};
+
+/**
+ * Analyzes an array of comments and generates a 1-2 sentence AI Insight about audience sentiment.
+ * @param {string[]} commentsArray - Array of comment strings
+ * @returns {Promise<string>} The generated sentiment insight
+ */
+export const generateCommentSentiment = async (commentsArray) => {
+    try {
+        if (!ai) {
+            ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        }
+        
+        if (!commentsArray || commentsArray.length === 0) return "";
+        
+        console.log(`[Gemini] Generating comment sentiment for ${commentsArray.length} comments...`);
+        
+        const combinedComments = commentsArray.map((c, i) => `Comment ${i+1}: ${c}`).join('\n');
+        
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [
+                        { text: combinedComments },
+                        { text: 'You are an expert community manager. Analyze the sentiment of these YouTube video comments. Write a concise, 1-to-2 sentence insight summarizing the general audience sentiment and highlighting any specific recurring themes, questions, or praise. Keep it positive and professional. Do NOT include phrases like "Here is the insight" or "The audience feels". Just give the direct insight.' }
+                    ]
+                }
+            ],
+            config: {
+                temperature: 0.4,
+            }
+        });
+
+        return response.text ? response.text.trim() : "";
+        
+    } catch (error) {
+        console.error("Gemini Comment Sentiment Error:", error);
+        return ""; // Return empty string on failure
+    }
+};

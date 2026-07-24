@@ -1,5 +1,6 @@
 import mongoose, { isValidObjectId } from "mongoose"
 import {Comment} from "../models/comment.model.js"
+import {generateCommentSentiment} from "../utils/gemini.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
 import {asyncHandler} from "../utils/asyncHandler.js"
@@ -236,10 +237,41 @@ const getCommentReplies = asyncHandler(async (req, res) => {
     );
 });
 
+const getVideoCommentSentiment = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video ID");
+    }
+
+    // Fetch the 50 most recent comments
+    const comments = await Comment.find({ video: videoId })
+        .sort({ createdAt: -1 })
+        .limit(50)
+        .select("content");
+
+    if (!comments || comments.length < 3) {
+        return res.status(200).json(
+            new ApiResponse(200, { insight: null }, "Not enough comments to generate an AI insight.")
+        );
+    }
+
+    const commentStrings = comments.map(c => c.content);
+    const insight = await generateCommentSentiment(commentStrings);
+
+    if (!insight) {
+        throw new ApiError(500, "Failed to generate AI insight");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, { insight }, "Comment sentiment generated successfully")
+    );
+});
+
 export {
     getVideoComments, 
     addComment, 
     updateComment,
     deleteComment,
-    getCommentReplies
+    getCommentReplies,
+    getVideoCommentSentiment
     }

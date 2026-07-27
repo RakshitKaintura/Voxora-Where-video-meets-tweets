@@ -1,16 +1,14 @@
 import { PlaySquare, MessageSquare, ListVideo, Users } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * Shown when a list/feed has no items.
- *
- * Props:
- *  - type: 'video' | 'tweet' | 'playlist' | 'comment' | 'channel' | 'generic'
- *  - title: string   — override default title
- *  - message: string — override default subtitle
- *  - action: ReactNode — optional CTA button
- *  - className: string
- */
+// Shown when a list/feed has no items.
+//
+// Props:
+//  - type: 'video' | 'tweet' | 'playlist' | 'comment' | 'channel' | 'generic'
+//  - title: string   — override default title
+//  - message: string — override default subtitle
+//  - action: ReactNode — optional CTA button
+//  - className: string
 
 const PRESETS = {
   video: {

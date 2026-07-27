@@ -1,15 +1,13 @@
 import { AlertTriangle, RefreshCw } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * Shown when an API call fails or an error boundary catches an error.
- *
- * Props:
- *  - title: string   — error heading
- *  - message: string — error detail
- *  - onRetry: fn     — if provided, shows a Retry button
- *  - className: string
- */
+// Shown when an API call fails or an error boundary catches an error.
+//
+// Props:
+//  - title: string   — error heading
+//  - message: string — error detail
+//  - onRetry: fn     — if provided, shows a Retry button
+//  - className: string
 export default function ErrorState({
   title = 'Something went wrong',
   message = 'An unexpected error occurred. Please try again.',

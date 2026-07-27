@@ -1,9 +1,7 @@
 import { cn } from '@/lib/utils'
 
-/**
- * Shimmer skeleton card — matches the shape of a VideoCard.
- * Drop it anywhere a real VideoCard would appear during loading.
- */
+// Shimmer skeleton card — matches the shape of a VideoCard.
+// Drop it anywhere a real VideoCard would appear during loading.
 export default function SkeletonCard({ className }) {
   return (
     <div className={cn('flex flex-col gap-3', className)}>

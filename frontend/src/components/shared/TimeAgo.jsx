@@ -1,13 +1,11 @@
 import { timeAgo } from '@/lib/utils'
 
-/**
- * Displays a relative time string ("2 hours ago", "just now").
- * Automatically re-renders every minute so the time stays fresh.
- *
- * Props:
- *  - date: string | Date  — ISO date string or Date object
- *  - className: string
- */
+// Displays a relative time string ("2 hours ago", "just now").
+// Automatically re-renders every minute so the time stays fresh.
+//
+// Props:
+//  - date: string | Date  — ISO date string or Date object
+//  - className: string
 import { useState, useEffect } from 'react'
 
 export default function TimeAgo({ date, className }) {

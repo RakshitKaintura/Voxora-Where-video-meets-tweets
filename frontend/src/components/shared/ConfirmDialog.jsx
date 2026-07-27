@@ -2,20 +2,18 @@ import { useEffect, useRef } from 'react'
 import { AlertTriangle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
-/**
- * An accessible confirmation modal dialog.
- *
- * Props:
- *  - isOpen: boolean
- *  - onClose: () => void
- *  - onConfirm: () => void
- *  - title: string
- *  - message: string
- *  - confirmLabel: string  — defaults to "Confirm"
- *  - cancelLabel: string   — defaults to "Cancel"
- *  - variant: 'danger' | 'default'
- *  - isLoading: boolean    — disables buttons while processing
- */
+// An accessible confirmation modal dialog.
+//
+// Props:
+//  - isOpen: boolean
+//  - onClose: () => void
+//  - onConfirm: () => void
+//  - title: string
+//  - message: string
+//  - confirmLabel: string  — defaults to "Confirm"
+//  - cancelLabel: string   — defaults to "Cancel"
+//  - variant: 'danger' | 'default'
+//  - isLoading: boolean    — disables buttons while processing
 export default function ConfirmDialog({
   isOpen,
   onClose,

@@ -1,15 +1,13 @@
 import { cn } from '@/lib/utils'
 import { getInitials } from '@/lib/utils'
 
-/**
- * User avatar with image and fallback initials.
- *
- * Props:
- *  - src: string        — image URL (Cloudinary)
- *  - alt: string        — alt text / user's name
- *  - size: 'xs'|'sm'|'md'|'lg'|'xl'  — preset size. Defaults to 'md'
- *  - className: string  — extra classes
- */
+// User avatar with image and fallback initials.
+//
+// Props:
+//  - src: string        — image URL (Cloudinary)
+//  - alt: string        — alt text / user's name
+//  - size: 'xs'|'sm'|'md'|'lg'|'xl'  — preset size. Defaults to 'md'
+//  - className: string  — extra classes
 const SIZE_MAP = {
   xs:  'w-6 h-6 text-xs',
   sm:  'w-8 h-8 text-xs',

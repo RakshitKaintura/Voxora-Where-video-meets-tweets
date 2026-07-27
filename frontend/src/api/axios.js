@@ -3,7 +3,7 @@ import store from '@/store/store'
 import { clearUser } from '@/store/slices/authSlice'
 
 const axiosInstance = axios.create({
-  baseURL: '/api/v1',
+  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
   withCredentials: true, // send/receive cookies (accessToken, refreshToken)
 })
 

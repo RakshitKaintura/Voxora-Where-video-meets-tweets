@@ -1,14 +1,12 @@
 import { Navigate, useLocation } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
-/**
- * Wraps a route element and redirects to /login if the user
- * is not authenticated. Preserves the original location so
- * we can redirect back after login.
- *
- * Usage in App.jsx:
- *   <Route element={<ProtectedRoute><SomePage /></ProtectedRoute>} />
- */
+// Wraps a route element and redirects to /login if the user
+// is not authenticated. Preserves the original location so
+// we can redirect back after login.
+//
+// Usage in App.jsx:
+//   <Route element={<ProtectedRoute><SomePage /></ProtectedRoute>} />
 export default function ProtectedRoute({ children }) {
   const { isAuthenticated, isLoading } = useSelector((state) => state.auth)
   const location = useLocation()

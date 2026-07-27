@@ -1,5 +1,7 @@
 import mongoose, { isValidObjectId } from "mongoose"
-import {Tweet} from "../models/tweet.model.js"
+import { Tweet } from "../models/tweet.model.js"
+import { Video } from "../models/video.model.js"
+import { polishTweetContent, generateVideoAnnouncements } from "../utils/gemini.js"
 import {User} from "../models/user.model.js"
 import {ApiError} from "../utils/ApiError.js"
 import {ApiResponse} from "../utils/ApiResponse.js"
@@ -207,11 +209,55 @@ const getTweetReplies = asyncHandler(async (req, res) => {
     res.status(200).json(new ApiResponse(200, replies, "Tweet replies fetched successfully"));
 });
 
+const polishTweet = asyncHandler(async (req, res) => {
+    const { content, tone } = req.body;
+
+    if (!content || content.trim() === "") {
+        throw new ApiError(400, "Content is required to polish");
+    }
+
+    const polishedContent = await polishTweetContent(content, tone || 'grammar');
+
+    if (!polishedContent) {
+        throw new ApiError(500, "Failed to polish tweet");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, { content: polishedContent }, "Tweet polished successfully")
+    );
+});
+
+const generateAnnouncements = asyncHandler(async (req, res) => {
+    const { videoId } = req.params;
+
+    if (!isValidObjectId(videoId)) {
+        throw new ApiError(400, "Invalid video id");
+    }
+
+    const video = await Video.findById(videoId);
+
+    if (!video) {
+        throw new ApiError(404, "Video not found");
+    }
+
+    const announcements = await generateVideoAnnouncements(video.title, video.description);
+
+    if (!announcements || announcements.length === 0) {
+        throw new ApiError(500, "Failed to generate announcements");
+    }
+
+    return res.status(200).json(
+        new ApiResponse(200, announcements, "Announcements generated successfully")
+    );
+});
+
 export {
     createTweet,
     getUserTweets,
     updateTweet,
     deleteTweet,
     getAllTweets,
-    getTweetReplies
+    polishTweet,
+    getTweetReplies,
+    generateAnnouncements
 }

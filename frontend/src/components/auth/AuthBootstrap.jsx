@@ -3,13 +3,11 @@ import { useDispatch } from 'react-redux'
 import { setUser, clearUser, setAuthLoading } from '@/store/slices/authSlice'
 import { getCurrentUser } from '@/api/auth.api'
 
-/**
- * Silently checks the current session on app boot.
- * Renders nothing — purely side-effect based.
- *
- * Place this inside <Providers> but outside the router outlet
- * so it runs exactly once when the app mounts.
- */
+// Silently checks the current session on app boot.
+// Renders nothing — purely side-effect based.
+//
+// Place this inside <Providers> but outside the router outlet
+// so it runs exactly once when the app mounts.
 export default function AuthBootstrap() {
   const dispatch = useDispatch()
 

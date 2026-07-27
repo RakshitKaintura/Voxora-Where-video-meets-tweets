@@ -11,11 +11,9 @@ export const AUTH_KEYS = {
 }
 
 // ─── useCurrentUser ───────────────────────────────────────────────────────────
-/**
- * Fetches the logged-in user on app load.
- * On success  → dispatches setUser to Redux.
- * On failure  → dispatches clearUser (not logged in).
- */
+// Fetches the logged-in user on app load.
+// On success  → dispatches setUser to Redux.
+// On failure  → dispatches clearUser (not logged in).
 export function useCurrentUser() {
   const dispatch = useDispatch()
 

@@ -39,7 +39,7 @@ function PageLoader() {
   )
 }
 
-/** Redirects to home if already authenticated (for login/register pages) */
+// Redirects to home if already authenticated (for login/register pages)
 function GuestRoute({ children }) {
   const { isAuthenticated, isLoading } = useSelector((s) => s.auth)
   if (isLoading) return null
@@ -47,7 +47,7 @@ function GuestRoute({ children }) {
   return children
 }
 
-/** Wraps a lazy page with Suspense */
+// Wraps a lazy page with Suspense
 function Lazy({ component: Component }) {
   return (
     <Suspense fallback={<PageLoader />}>

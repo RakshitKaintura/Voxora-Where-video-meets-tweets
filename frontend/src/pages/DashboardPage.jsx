@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from 'react'
 import { 
   Users, PlaySquare, Eye, Heart, 
   Upload, Loader2, MoreVertical, 
-  Trash2, Edit2, CheckCircle2, XCircle, FolderPlus
+  Trash2, Edit2, CheckCircle2, XCircle, FolderPlus, Megaphone
 } from 'lucide-react'
 import { useChannelStats, useDashboardVideos } from '@/hooks/useDashboard'
 import { useDeleteVideo, useTogglePublishStatus } from '@/hooks/useVideos'
@@ -13,6 +13,7 @@ import ErrorState from '@/components/shared/ErrorState'
 import EmptyState from '@/components/shared/EmptyState'
 import PlaylistModal from '@/components/playlist/PlaylistModal'
 import PlaylistCard from '@/components/playlist/PlaylistCard'
+import AutoTweetModal from '@/components/dashboard/AutoTweetModal'
 import { useSelector } from 'react-redux'
 import { useUserPlaylists } from '@/hooks/usePlaylists'
 
@@ -39,6 +40,7 @@ export default function DashboardPage() {
   const [isUploadModalOpen, setIsUploadModalOpen] = useState(false)
   const [deletingVideoId, setDeletingVideoId] = useState(null)
   const [playlistModalVideoId, setPlaylistModalVideoId] = useState(null)
+  const [announcingVideo, setAnnouncingVideo] = useState(null)
   
   const { data: stats, isLoading: isStatsLoading, isError: isStatsError, refetch: refetchStats } = useChannelStats()
   const { data: playlists, isLoading: isPlaylistsLoading } = useUserPlaylists(activeTab === 'playlists' ? user?._id : null)
@@ -234,6 +236,13 @@ export default function DashboardPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => setAnnouncingVideo(video)}
+                            className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
+                            title="Announce via Tweet"
+                          >
+                            <Megaphone className="w-5 h-5" />
+                          </button>
+                          <button
                             onClick={() => setPlaylistModalVideoId(video._id)}
                             className="p-2 text-[hsl(var(--muted-foreground))] hover:text-[hsl(var(--foreground))] hover:bg-[hsl(var(--muted))] rounded-full transition-colors"
                             title="Save to Playlist"
@@ -305,10 +314,19 @@ export default function DashboardPage() {
         isLoading={isDeleting}
       />
 
-      <PlaylistModal 
-        videoId={playlistModalVideoId}
-        isOpen={!!playlistModalVideoId}
-        onClose={() => setPlaylistModalVideoId(null)}
+      {playlistModalVideoId && (
+        <PlaylistModal
+          isOpen={!!playlistModalVideoId}
+          onClose={() => setPlaylistModalVideoId(null)}
+          videoId={playlistModalVideoId}
+        />
+      )}
+
+      {/* Announce Modal */}
+      <AutoTweetModal 
+        isOpen={!!announcingVideo}
+        onClose={() => setAnnouncingVideo(null)}
+        video={announcingVideo}
       />
     </div>
   )

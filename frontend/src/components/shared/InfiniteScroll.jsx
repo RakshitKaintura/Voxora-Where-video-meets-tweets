@@ -1,15 +1,13 @@
 import { useEffect, useRef } from 'react'
 
-/**
- * Wraps children and fires onIntersect() when the sentinel
- * div enters the viewport. Used for infinite scroll feeds.
- *
- * Props:
- *  - onIntersect: () => void  — called when bottom sentinel is visible
- *  - hasMore: boolean         — stop observing when no more pages
- *  - isLoading: boolean       — don't fire while already loading
- *  - children: ReactNode
- */
+// Wraps children and fires onIntersect() when the sentinel
+// div enters the viewport. Used for infinite scroll feeds.
+//
+// Props:
+//  - onIntersect: () => void  — called when bottom sentinel is visible
+//  - hasMore: boolean         — stop observing when no more pages
+//  - isLoading: boolean       — don't fire while already loading
+//  - children: ReactNode
 export default function InfiniteScroll({ onIntersect, hasMore, isLoading, children }) {
   const sentinelRef = useRef(null)
 

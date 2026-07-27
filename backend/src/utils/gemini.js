@@ -3,11 +3,7 @@ import fs from 'fs';
 
 let ai = null;
 
-/**
- * Transcribes a local video file and returns a WebVTT string.
- * @param {string} localFilePath - Path to the local video file
- * @returns {Promise<string>} The VTT formatted string
- */
+// Transcribes a local video file and returns a WebVTT string.
 export const generateVideoTranscription = async (localFilePath) => {
     try {
         if (!ai) {
@@ -83,11 +79,7 @@ export const generateVideoTranscription = async (localFilePath) => {
     }
 };
 
-/**
- * Generates a 3-bullet point summary from text.
- * @param {string} text - The text to summarize (e.g. captions or description)
- * @returns {Promise<string>} The generated summary
- */
+// Generates a 3-bullet point summary from text.
 export const generateTextSummary = async (text) => {
     try {
         if (!ai) {
@@ -121,11 +113,7 @@ export const generateTextSummary = async (text) => {
     }
 };
 
-/**
- * Uploads a video to Gemini and generates a click-worthy title and SEO description.
- * @param {string} localFilePath - Path to the local video file
- * @returns {Promise<{title: string, description: string}>} The generated metadata
- */
+// Uploads a video to Gemini and generates a click-worthy title and SEO description.
 export const generateVideoMetadata = async (localFilePath) => {
     try {
         if (!ai) {
@@ -194,11 +182,7 @@ export const generateVideoMetadata = async (localFilePath) => {
     }
 };
 
-/**
- * Analyzes an array of comments and generates a 1-2 sentence AI Insight about audience sentiment.
- * @param {string[]} commentsArray - Array of comment strings
- * @returns {Promise<string>} The generated sentiment insight
- */
+// Analyzes an array of comments and generates a 1-2 sentence AI Insight about audience sentiment.
 export const generateCommentSentiment = async (commentsArray) => {
     try {
         if (!ai) {
@@ -232,5 +216,100 @@ export const generateCommentSentiment = async (commentsArray) => {
     } catch (error) {
         console.error("Gemini Comment Sentiment Error:", error);
         return ""; // Return empty string on failure
+    }
+};
+
+// Polishes a tweet based on the provided tone.
+export const polishTweetContent = async (content, tone) => {
+    try {
+        if (!ai) {
+            ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        }
+        
+        if (!content) return "";
+        
+        let promptModifier = "Fix any grammatical errors and improve the overall flow.";
+        if (tone === 'professional') {
+            promptModifier = "Rewrite this to sound highly professional, articulate, and business-appropriate.";
+        } else if (tone === 'funny') {
+            promptModifier = "Rewrite this to be humorous, witty, and engaging for social media.";
+        } else if (tone === 'hype') {
+            promptModifier = "Rewrite this to build extreme hype and excitement! Use enthusiastic language and emojis.";
+        }
+
+        const prompt = `You are an expert social media copywriter. A user has drafted the following tweet:\n\n"${content}"\n\nYour task: ${promptModifier}\n\nReturn ONLY the polished tweet text. Do not include any conversational filler like "Here is your tweet:" or "How about this:". Just the raw, polished text. Keep it under 280 characters if possible.`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ],
+            config: {
+                temperature: 0.7,
+            }
+        });
+
+        return response.text ? response.text.trim() : content; // fallback to original content if it fails
+        
+    } catch (error) {
+        console.error("Gemini Polish Tweet Error:", error);
+        return content; // Return original on failure
+    }
+};
+
+// Generates 3 distinct tweet announcement options for a video.
+export const generateVideoAnnouncements = async (title, description) => {
+    try {
+        if (!ai) {
+            ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+        }
+        
+        if (!title) return [];
+        
+        const prompt = `You are an expert social media copywriter. Generate 3 distinct tweet options to announce a new YouTube video.
+        
+Video Title: "${title}"
+Video Description: "${description || "No description provided."}"
+
+The 3 options MUST follow these exact styles:
+1. "Hype": High energy, uses emojis, builds excitement.
+2. "Informative": Clear, professional, highlights the key takeaways of the video.
+3. "Question": Asks an engaging question related to the video's topic to drive replies.
+
+Return the response strictly as a JSON array of objects with 'style' and 'content' keys. Do NOT wrap it in markdown block quotes.
+Example:
+[
+  {"style": "Hype", "content": "🚨 NEW VIDEO DROP! 🔥 Just uploaded..."},
+  {"style": "Informative", "content": "In my latest video, I break down..."},
+  {"style": "Question", "content": "Have you ever wondered how...? Check out my new video!"}
+]
+`;
+
+        const response = await ai.models.generateContent({
+            model: 'gemini-3.6-flash',
+            contents: [
+                {
+                    role: 'user',
+                    parts: [{ text: prompt }]
+                }
+            ],
+            config: {
+                temperature: 0.7,
+            }
+        });
+
+        if (response.text) {
+            // Strip any markdown code blocks that Gemini might return (e.g. ```json ... ```)
+            let rawJson = response.text.replace(/```json\n?|```/g, '').trim();
+            return JSON.parse(rawJson);
+        }
+        return [];
+        
+    } catch (error) {
+        console.error("Gemini Generate Announcements Error:", error);
+        return []; // Return empty array on failure
     }
 };

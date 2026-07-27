@@ -1,17 +1,13 @@
 import { clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
-/**
- * Merges Tailwind classes without conflicts.
- * Used by shadcn/ui components.
- */
+// Merges Tailwind classes without conflicts.
+// Used by shadcn/ui components.
 export function cn(...inputs) {
   return twMerge(clsx(inputs))
 }
 
-/**
- * Format a number into abbreviated form (1.2K, 3.4M, etc.)
- */
+// Format a number into abbreviated form (1.2K, 3.4M, etc.)
 export function formatCount(count) {
   if (!count) return '0'
   if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1)}M`
@@ -19,9 +15,7 @@ export function formatCount(count) {
   return String(count)
 }
 
-/**
- * Format seconds duration to mm:ss or hh:mm:ss
- */
+// Format seconds duration to mm:ss or hh:mm:ss
 export function formatDuration(seconds) {
   if (!seconds) return '0:00'
   const h = Math.floor(seconds / 3600)
@@ -32,9 +26,7 @@ export function formatDuration(seconds) {
   return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`
 }
 
-/**
- * Format ISO date string to relative time ("2 hours ago")
- */
+// Format ISO date string to relative time ("2 hours ago")
 export function timeAgo(dateStr) {
   if (!dateStr) return ''
   const diff = Date.now() - new Date(dateStr).getTime()
@@ -53,9 +45,7 @@ export function timeAgo(dateStr) {
   return `${Math.floor(months / 12)}y ago`
 }
 
-/**
- * Get user's initials for avatar fallback
- */
+// Get user's initials for avatar fallback
 export function getInitials(name = '') {
   return name
     .split(' ')

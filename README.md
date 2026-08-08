@@ -1,5 +1,7 @@
 # 🎬 Voxora — Where Video Meets Tweets
 
+### 🌐 [Live Demo](https://voxora-where-video-meets-tweets.vercel.app) · 💻 [GitHub Repository](https://github.com/RakshitKaintura/Voxora-Where-video-meets-tweets) · ⚙️ [Backend Healthcheck](https://voxora-where-video-meets-tweets.onrender.com/api/v1/healthcheck)
+
 Voxora is a full-stack video-sharing and social media platform inspired by YouTube and Twitter. Users can upload videos, write tweets, comment, like, create playlists, subscribe to channels, and leverage **AI-powered features** like tweet polishing, video summary generation, comment sentiment analysis, and auto-tweet announcements — all powered by Google's Gemini AI.
 
 ---

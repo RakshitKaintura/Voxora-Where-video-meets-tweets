@@ -21,6 +21,11 @@ app.use(cors({
             return callback(null, true)
         }
 
+        // Allow specific Vercel project deployments (secure)
+        if (origin.match(/^https:\/\/voxora-where-video-meets-tweets.*\.vercel\.app$/)) {
+            return callback(null, true)
+        }
+
         // Allow origins listed in .env
         if (allowedOrigins.includes(origin)) {
             return callback(null, true)
